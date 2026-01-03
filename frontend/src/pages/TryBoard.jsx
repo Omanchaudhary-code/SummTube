@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ListCollapse, Send, X, Menu } from "lucide-react";
-import logo  from "../assets/logo.png";
+import logo from "../assets/logo.png";
 
 // Mock components - replace with your actual components
 const NavMenuBtn = ({ onLoginClick, onSignupClick }) => (
@@ -21,8 +21,39 @@ const NavMenuBtn = ({ onLoginClick, onSignupClick }) => (
 );
 
 const LoginModal = ({ onClose, onSwitchToSignup }) => {
-  const handleLogin = () => {
-    console.log("Login clicked");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:8080/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Important for cookies
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`Welcome back, ${data.user.name}!`);
+        onClose();
+        window.location.reload(); // Refresh to load user session
+      } else {
+        alert(data.error || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Login failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -32,21 +63,31 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
           <X size={24} />
         </button>
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Login</h2>
-        <div className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4">
           <input
             type="email"
             placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg text-gray-800"
+            required
           />
           <input
             type="password"
             placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg text-gray-800"
+            required
           />
-          <button onClick={handleLogin} className="w-full bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700">
-            Login
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700 disabled:bg-gray-400"
+          >
+            {isLoading ? "Logging in..." : "Login"}
           </button>
-        </div>
+        </form>
         <p className="text-center mt-4 text-gray-600">
           Don't have an account?{" "}
           <button onClick={onSwitchToSignup} className="text-cyan-600 hover:underline">
@@ -59,8 +100,40 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
 };
 
 const SignupModal = ({ onClose, onSwitchToLogin }) => {
-  const handleSignup = () => {
-    console.log("Signup clicked");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:8080/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(`Welcome, ${data.user.name}!`);
+        onClose();
+        window.location.reload();
+      } else {
+        alert(data.error || "Signup failed");
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      alert("Signup failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -70,26 +143,40 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
           <X size={24} />
         </button>
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Sign Up</h2>
-        <div className="space-y-4">
+        <form onSubmit={handleSignup} className="space-y-4">
           <input
             type="text"
             placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg text-gray-800"
+            required
           />
           <input
             type="email"
             placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg text-gray-800"
+            required
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder="Password (min 8 characters)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg text-gray-800"
+            minLength={8}
+            required
           />
-          <button onClick={handleSignup} className="w-full bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700">
-            Sign Up
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700 disabled:bg-gray-400"
+          >
+            {isLoading ? "Creating account..." : "Sign Up"}
           </button>
-        </div>
+        </form>
         <p className="text-center mt-4 text-gray-600">
           Already have an account?{" "}
           <button onClick={onSwitchToLogin} className="text-cyan-600 hover:underline">
@@ -108,10 +195,31 @@ const TryBoard = () => {
   const [link, setLink] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [triesLeft, setTriesLeft] = useState(3);
+  const [summary, setSummary] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Fetch guest status on component mount
+  useEffect(() => {
+    fetchGuestStatus();
+  }, []);
+
+  const fetchGuestStatus = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/api/guest/status", {
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (data.success) {
+        setTriesLeft(data.status.triesLeft);
+      }
+    } catch (error) {
+      console.error("Error fetching guest status:", error);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!link.trim()) {
-      alert("Please enter a link");
+      alert("Please enter a YouTube link");
       return;
     }
 
@@ -122,23 +230,39 @@ const TryBoard = () => {
     }
 
     setIsLoading(true);
+    setError(null);
+    setSummary(null);
+
     try {
-      const response = await fetch("https://api.example.com/summarize", {
+      const response = await fetch("http://localhost:8080/api/summary/guest", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Important for cookies
         body: JSON.stringify({
-          url: link,
+          video_url: link,  // ✅ Correct field name
+          summary_type: "brief",
         }),
       });
+
       const data = await response.json();
-      console.log("Response:", data);
-      setTriesLeft(triesLeft - 1);
-      alert(`Link submitted successfully! You have ${triesLeft - 1} tries left.`);
-      setLink("");
+
+      if (response.ok && data.success) {
+        setSummary(data);
+        setTriesLeft(data.guest_status.triesLeft);
+        setLink("");
+
+        if (data.message) {
+          alert(data.message);
+        }
+      } else {
+        setError(data.error || data.message || "Failed to generate summary");
+        alert(data.error || "Failed to generate summary. Please try again.");
+      }
     } catch (error) {
       console.error("Error submitting link:", error);
+      setError("Network error. Please check your connection.");
       alert("Failed to submit link. Please try again.");
     } finally {
       setIsLoading(false);
@@ -161,9 +285,10 @@ const TryBoard = () => {
                 <>
                   <div className="flex items-center gap-2">
                     <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span><img src={logo} alt="Summtube logo" /></span>
+                      <span>
+                        <img src={logo} alt="Summtube logo" />
+                      </span>
                     </div>
-                    <span className="font-bold text-lg whitespace-nowrap">SummTube</span>
                   </div>
                   <button
                     onClick={() => setIsSidebarOpen(false)}
@@ -188,14 +313,15 @@ const TryBoard = () => {
                 <div className="bg-[#181818] rounded-lg p-4">
                   <h3 className="font-semibold text-lg mb-2">Guest Trial</h3>
                   <p className="text-sm text-cyan-100 mb-3">
-                    You can try SummTube {triesLeft} more {triesLeft === 1 ? 'time' : 'times'} for free!
+                    You can try SummTube {triesLeft} more {triesLeft === 1 ? "time" : "times"} for
+                    free!
                   </p>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs">Tries remaining:</span>
                     <span className="font-bold text-lg">{triesLeft}/3</span>
                   </div>
                   <div className="w-full bg-[#282828] rounded-full h-2 mb-3">
-                    <div 
+                    <div
                       className="bg-white h-2 rounded-full transition-all duration-300"
                       style={{ width: `${(triesLeft / 3) * 100}%` }}
                     />
@@ -227,17 +353,7 @@ const TryBoard = () => {
           {/* Top Navigation */}
           <div className="top-section py-3 px-4 md:py-4 md:px-6 lg:px-10 flex items-center justify-between border-b border-cyan-600 flex-shrink-0">
             <div className="flex items-center gap-3">
-              {!isSidebarOpen && (
-                <button
-                  onClick={() => setIsSidebarOpen(true)}
-                  className="hover:bg-cyan-600 p-2 rounded transition-colors"
-                >
-                  <Menu size={24} />
-                </button>
-              )}
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">
-                SummTube
-              </h1>
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">SummTube</h1>
             </div>
             <div className="hidden md:block">
               <NavMenuBtn
@@ -266,14 +382,53 @@ const TryBoard = () => {
                   Paste a YouTube link below to get an AI-generated summary of the video content.
                 </p>
                 <p className="text-cyan-200 text-xs md:text-sm">
-                  💡 You have <span className="font-bold text-white">{triesLeft} free {triesLeft === 1 ? 'try' : 'tries'}</span> remaining. Login for unlimited access!
+                  💡 You have{" "}
+                  <span className="font-bold text-white">
+                    {triesLeft} free {triesLeft === 1 ? "try" : "tries"}
+                  </span>{" "}
+                  remaining. Login for unlimited access!
                 </p>
               </div>
-              
-              {/* Placeholder for summary results */}
-              <div className="space-y-4">
-                {/* Add your summary content here */}
-              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="bg-red-500 bg-opacity-20 border border-red-500 rounded-lg p-4 mb-4">
+                  <p className="text-red-200">{error}</p>
+                </div>
+              )}
+
+              {/* Summary Display */}
+              {summary && (
+                <div className="bg-[#202124] rounded-lg p-6 space-y-4">
+                  <div className="flex items-start gap-4">
+                    {summary.thumbnail && (
+                      <img
+                        src={summary.thumbnail}
+                        alt={summary.video_title}
+                        className="w-32 h-20 object-cover rounded"
+                      />
+                    )}
+                    <div>
+                      <h3 className="text-xl font-semibold mb-2">{summary.video_title}</h3>
+                      <p className="text-sm text-cyan-300">
+                        Duration: {Math.floor(summary.duration / 60)}:{String(summary.duration % 60).padStart(2, '0')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-cyan-600 pt-4">
+                    <h4 className="text-lg font-semibold mb-2">Summary:</h4>
+                    <p className="text-cyan-100 leading-relaxed whitespace-pre-wrap">
+                      {summary.summary}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm text-cyan-300 border-t border-cyan-600 pt-4">
+                    <span>Transcript length: {summary.transcript_length} characters</span>
+                    <span>Processed in {summary.processing_time}s</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -289,7 +444,7 @@ const TryBoard = () => {
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !isLoading) {
+                      if (e.key === "Enter" && !isLoading) {
                         handleSubmit();
                       }
                     }}

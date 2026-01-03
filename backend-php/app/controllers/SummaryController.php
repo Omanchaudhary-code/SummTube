@@ -32,6 +32,7 @@ class SummaryController
     {
         $data = $request->body();
         $videoUrl = $data['video_url'] ?? '';
+        $summaryType = $data['summary_type'] ?? 'detailed';
 
         // Validate
         if (empty($videoUrl) || !$this->isValidYouTubeUrl($videoUrl)) {
@@ -42,11 +43,27 @@ class SummaryController
         }
 
         try {
-            // Generate summary via AI service
-            $result = $this->aiService->generateSummary($videoUrl);
+            // Check guest limit BEFORE generating (don't waste API calls)
+            $identifier = $request->guestIdentifier ?? $this->guestService->generateIdentifier(
+                $request->ip(),
+                $request->userAgent()
+            );
+            
+            $status = $this->guestService->checkLimit($identifier);
+            
+            if ($status['triesLeft'] <= 0) {
+                $response->json([
+                    'error' => 'Guest limit reached',
+                    'message' => 'You have used all free summaries. Please login for unlimited access.',
+                    'guest_status' => $status
+                ], 429);
+                return;
+            }
 
-            // Increment guest usage (identifier from middleware)
-            $identifier = $request->guestIdentifier;
+            // Generate summary via AI service
+            $result = $this->aiService->generateSummary($videoUrl, $summaryType);
+
+            // Increment guest usage
             $this->guestService->incrementUsage($identifier);
 
             // Get updated status
@@ -54,9 +71,15 @@ class SummaryController
 
             $response->json([
                 'success' => true,
-                'summary' => $result['summary'],
-                'video_title' => $result['title'],
-                'video_duration' => $result['duration'],
+                'video_id' => $result['video_id'] ?? null,
+                'video_title' => $result['title'] ?? 'Unknown',
+                'video_url' => $videoUrl,
+                'thumbnail' => $result['thumbnail'] ?? null,
+                'duration' => $result['duration'] ?? 0,
+                'summary' => $result['summary'] ?? '',
+                'summary_type' => $summaryType,
+                'transcript_length' => $result['transcript_length'] ?? 0,
+                'processing_time' => $result['processing_time'] ?? 0,
                 'guest_status' => [
                     'triesLeft' => $status['triesLeft'],
                     'triesUsed' => $status['triesUsed'],
@@ -86,6 +109,7 @@ class SummaryController
     {
         $data = $request->body();
         $videoUrl = $data['video_url'] ?? '';
+        $summaryType = $data['summary_type'] ?? 'detailed';
         $userId = $request->user['user_id'];
 
         // Validate
@@ -98,15 +122,21 @@ class SummaryController
 
         try {
             // Generate summary via AI service
-            $result = $this->aiService->generateSummary($videoUrl);
+            $result = $this->aiService->generateSummary($videoUrl, $summaryType);
 
             // Save to database
             $summaryId = $this->summaryModel->create([
                 'user_id' => $userId,
                 'video_url' => $videoUrl,
-                'video_title' => $result['title'],
-                'video_duration' => $result['duration'],
-                'summary_text' => $result['summary']
+                'video_id' => $result['video_id'] ?? null,
+                'video_title' => $result['title'] ?? 'Unknown',
+                'thumbnail' => $result['thumbnail'] ?? null,
+                'duration' => $result['duration'] ?? 0,
+                'summary_text' => $result['summary'] ?? '',
+                'summary_type' => $summaryType,
+                'original_text' => '', // Can store transcript if needed
+                'transcript_length' => $result['transcript_length'] ?? 0,
+                'processing_time' => $result['processing_time'] ?? 0
             ]);
 
             // Update usage stats
@@ -115,9 +145,15 @@ class SummaryController
             $response->json([
                 'success' => true,
                 'id' => $summaryId,
-                'summary' => $result['summary'],
-                'video_title' => $result['title'],
-                'video_duration' => $result['duration'],
+                'video_id' => $result['video_id'] ?? null,
+                'video_title' => $result['title'] ?? 'Unknown',
+                'video_url' => $videoUrl,
+                'thumbnail' => $result['thumbnail'] ?? null,
+                'duration' => $result['duration'] ?? 0,
+                'summary' => $result['summary'] ?? '',
+                'summary_type' => $summaryType,
+                'transcript_length' => $result['transcript_length'] ?? 0,
+                'processing_time' => $result['processing_time'] ?? 0,
                 'created_at' => date('Y-m-d H:i:s')
             ], 201);
 
@@ -137,7 +173,7 @@ class SummaryController
     {
         $userId = $request->user['user_id'];
         $page = (int) ($request->query('page') ?? 1);
-        $limit = 20;
+        $limit = (int) ($request->query('limit') ?? 20);
         $offset = ($page - 1) * $limit;
 
         try {
@@ -146,7 +182,7 @@ class SummaryController
 
             $response->json([
                 'success' => true,
-                'summaries' => $summaries,
+                'data' => $summaries,
                 'pagination' => [
                     'total' => $total,
                     'page' => $page,
@@ -176,18 +212,21 @@ class SummaryController
             $summary = $this->summaryModel->getByIdAndUserId($summaryId, $userId);
 
             if (!$summary) {
-                $response->notFound('Summary not found');
+                $response->json([
+                    'error' => 'Summary not found'
+                ], 404);
                 return;
             }
 
             $response->json([
                 'success' => true,
-                'summary' => $summary
+                'data' => $summary
             ], 200);
 
         } catch (\Exception $e) {
             $response->json([
-                'error' => 'Failed to fetch summary'
+                'error' => 'Failed to fetch summary',
+                'message' => $e->getMessage()
             ], 500);
         }
     }
@@ -205,18 +244,21 @@ class SummaryController
             $deleted = $this->summaryModel->delete($summaryId, $userId);
 
             if (!$deleted) {
-                $response->notFound('Summary not found');
+                $response->json([
+                    'error' => 'Summary not found'
+                ], 404);
                 return;
             }
 
             $response->json([
                 'success' => true,
-                'message' => 'Summary deleted'
+                'message' => 'Summary deleted successfully'
             ], 200);
 
         } catch (\Exception $e) {
             $response->json([
-                'error' => 'Failed to delete summary'
+                'error' => 'Failed to delete summary',
+                'message' => $e->getMessage()
             ], 500);
         }
     }

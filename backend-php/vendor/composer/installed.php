@@ -3,7 +3,7 @@
         'name' => 'summtube/backend',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '498213fba221fd0830509ba6f8eac109d0043d3a',
+        'reference' => 'c4788fa03894df7ffe5a0da861568a3a4f176ffc',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -208,7 +208,7 @@
         'summtube/backend' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '498213fba221fd0830509ba6f8eac109d0043d3a',
+            'reference' => 'c4788fa03894df7ffe5a0da861568a3a4f176ffc',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

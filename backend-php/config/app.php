@@ -1,5 +1,4 @@
 <?php
-
 return [
     // Application Settings
     'app_name' => $_ENV['APP_NAME'] ?? 'SummTube',
@@ -19,6 +18,13 @@ return [
         'expiry' => (int)($_ENV['JWT_EXPIRY'] ?? 604800),
     ],
     
+    // Google OAuth Configuration (ADD THIS)
+    'google' => [
+        'client_id' => $_ENV['GOOGLE_CLIENT_ID'] ?? '',
+        'client_secret' => $_ENV['GOOGLE_CLIENT_SECRET'] ?? '',
+        'redirect_uri' => $_ENV['GOOGLE_REDIRECT_URI'] ?? 'http://localhost:3000/auth/callback',
+    ],
+    
     // Guest Usage Limits
     'guest' => [
         'summary_limit' => (int)($_ENV['GUEST_SUMMARY_LIMIT'] ?? 3),
@@ -34,7 +40,7 @@ return [
     
     // AI Service
     'ai_service' => [
-        'url' => $_ENV['AI_SERVICE_URL'] ?? 'http://localhost:8000',
+        'url' => $_ENV['AI_SERVICE_URL'] ?? 'http://localhost:8001/api/v1',
         'timeout' => (int)($_ENV['AI_SERVICE_TIMEOUT'] ?? 30),
     ],
     
@@ -45,5 +51,17 @@ return [
         'allowed_headers' => explode(',', $_ENV['CORS_ALLOWED_HEADERS'] ?? 'Content-Type,Authorization,X-Requested-With'),
         'allow_credentials' => filter_var($_ENV['CORS_ALLOW_CREDENTIALS'] ?? 'true', FILTER_VALIDATE_BOOLEAN),
         'max_age' => (int)($_ENV['CORS_MAX_AGE'] ?? 86400),
+    ],
+    
+    // Cookie Configuration (ADD THIS for secure cookies)
+    'cookie' => [
+        'secure' => filter_var($_ENV['COOKIE_SECURE'] ?? false, FILTER_VALIDATE_BOOLEAN),
+        'httponly' => filter_var($_ENV['COOKIE_HTTPONLY'] ?? true, FILTER_VALIDATE_BOOLEAN),
+        'samesite' => $_ENV['COOKIE_SAMESITE'] ?? 'Lax',
+        'domain' => $_ENV['COOKIE_DOMAIN'] ?? '',
+        'access_token_name' => $_ENV['ACCESS_TOKEN_COOKIE_NAME'] ?? 'access_token',
+        'refresh_token_name' => $_ENV['REFRESH_TOKEN_COOKIE_NAME'] ?? 'refresh_token',
+        'access_token_expiry' => (int)($_ENV['ACCESS_TOKEN_COOKIE_EXPIRY'] ?? 900), // 15 min
+        'refresh_token_expiry' => (int)($_ENV['REFRESH_TOKEN_COOKIE_EXPIRY'] ?? 604800), // 7 days
     ],
 ];

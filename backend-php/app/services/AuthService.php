@@ -68,8 +68,8 @@ class AuthService
         }
 
         // For Google OAuth users, password login is not allowed
-        if ($user['auth_provider'] === 'google') {
-            throw new \Exception('Please login with Google');
+        if ($user['auth_provider'] === 'google' && empty($user['password'])) {
+            throw new \Exception('This account was created with Google. Please sign in with Google instead.');
         }
 
         // Verify password
@@ -100,9 +100,14 @@ class AuthService
      */
     public function handleGoogleAuth(array $googleUserData): array
     {
-        $googleId = $googleUserData['id'];
+        // FIX: Accept 'google_id' from GoogleOAuthService
+        $googleId = $googleUserData['google_id'] ?? $googleUserData['id'] ?? null;
         $email = $googleUserData['email'];
         $name = $googleUserData['name'];
+
+        if (!$googleId) {
+            throw new \Exception('Google ID is missing from authentication data');
+        }
 
         // Check if user exists with Google ID
         $user = $this->userModel->findByGoogleId($googleId);
@@ -115,8 +120,11 @@ class AuthService
                 // Update existing user with Google ID
                 $this->userModel->update($user['id'], [
                     'google_id' => $googleId,
-                    'auth_provider' => 'google'
+                    'auth_provider' => 'google',
+                    'name' => $name  // Update name from Google
                 ]);
+                
+                error_log("Linked Google account to existing email user: {$email}");
             } else {
                 // Create new user
                 $userId = $this->userModel->create([
@@ -129,9 +137,20 @@ class AuthService
 
                 // Initialize usage
                 $this->usageModel->create($userId);
-
+                
                 $user = $this->userModel->findById($userId);
+                
+                error_log("Created new user with Google: {$email}");
             }
+        } else {
+            // User exists with Google ID - just update name if changed
+            if ($user['name'] !== $name) {
+                $this->userModel->update($user['id'], [
+                    'name' => $name
+                ]);
+            }
+            
+            error_log("Google login for existing user: {$email}");
         }
 
         // Prepare user data
@@ -214,7 +233,7 @@ class AuthService
     public function getUserProfile(int $userId): ?array
     {
         $user = $this->userModel->findById($userId);
-        
+
         if (!$user) {
             return null;
         }

@@ -7,7 +7,7 @@
         "php": ">=8.0",
         "vlucas/phpdotenv": "^5.6",
         "firebase/php-jwt": "^6.11",
-        "google/apiclient": "^2.18"
+        "google/apiclient": "^2.0"
     },
     "autoload": {
         "psr-4": {
