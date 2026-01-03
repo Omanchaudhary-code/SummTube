@@ -1,8 +1,9 @@
 // import SplashCursor from '../components/custom/SplashCursor.jsx'
 // import Antigravity from '../components/custom/Antigravity.jsx';
-
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
   return (
     <div className="wrapper h-screen w-screen bg-[var(--bg-main)] text-[var(--font-sans)] overflow-hidden flex flex-col justify-between">
       {/* <SplashCursor /> */}
@@ -46,7 +47,10 @@ const HeroSection = () => {
         </div>
 
         <div className="button">
-          <button className="text-lg sm:text-xl bg-black rounded-2xl text-white py-3 sm:py-5 px-6 sm:px-12 mt-4 hover:cursor-pointer hover:scale-102">
+          <button 
+          className="text-lg sm:text-xl bg-black rounded-2xl text-white py-3 sm:py-5 px-6 sm:px-12 mt-4 hover:cursor-pointer hover:scale-102"
+           onClick={() => navigate("/try")}
+          >
             Try SummTube
           </button>
         </div>

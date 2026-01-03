@@ -3,6 +3,7 @@ import HeroSection from '../sections/HeroSection.jsx'
 import PrimaryCardSection from '../sections/PrimaryCardSection.jsx'
 import TertiarySection from '../sections/TertiarySection.jsx';
 
+
 import {
   Link,
   Brain,
@@ -43,6 +44,7 @@ const cardsData = [
         <HeroSection />
         <PrimaryCardSection cardsData={cardsData} />
         <TertiarySection />
+
     </div>
   )
 }

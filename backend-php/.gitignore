@@ -1,0 +1,21 @@
+# Dependencies
+/vendor/
+
+# Environment
+.env
+
+# Logs
+/storage/logs/*.log
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Composer
+composer.lock

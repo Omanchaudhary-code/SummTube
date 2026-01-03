@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import NavMenuBtn from "./NavMenuBtn";
 
 const Menu = ({ onLoginClick, onSignupClick }) => {
   return (
@@ -11,25 +12,11 @@ const Menu = ({ onLoginClick, onSignupClick }) => {
         </Link>
       </li>
 
-      {/* Login */}
-      <li>
-        <button
-          onClick={onLoginClick}
-          className="font-medium hover:border-b-1 cursor-pointer"
-        >
-          Login
-        </button>
-      </li>
-
-      {/* Signup */}
-      <li>
-        <button
-          onClick={onSignupClick}
-          className="border border-black py-1 px-4 rounded hover:bg-black hover:text-white transition cursor-pointer"
-        >
-          Signup For Free
-        </button>
-      </li>
+      {/* Login / Signup Buttons */}
+      <NavMenuBtn
+        onLoginClick={onLoginClick}
+        onSignupClick={onSignupClick}
+      />
     </ul>
   );
 };
