@@ -18,7 +18,7 @@ const TertiarySection = () => {
 
 
   return (
-    <div className="techStackWrapper w-screen bg-[var(--bg-main)]">
+    <div className="techStackWrapper w-full bg-[var(--bg-main)]">
 
     <div className="heading text-center py-8">
     <h2

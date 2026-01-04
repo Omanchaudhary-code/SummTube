@@ -1,16 +1,24 @@
-const NavMenuBtn = ({ onLoginClick, onSignupClick }) => {
+const NavMenuBtn = ({ onLoginClick, onSignupClick, isMobile }) => {
   return (
-    <li className="flex gap-3">
+    <li
+      className={`flex ${
+        isMobile ? "flex-col w-full px-6 gap-3" : "gap-3"
+      }`}
+    >
       <button
         onClick={onLoginClick}
-        className="px-4 py-2 rounded border hover:bg-gray-100"
+        className={`${
+          isMobile ? "w-full" : ""
+        } px-4 py-2 rounded border hover:bg-gray-100 transition`}
       >
         Login
       </button>
 
       <button
         onClick={onSignupClick}
-        className="px-4 py-2 rounded bg-black text-white hover:opacity-90"
+        className={`${
+          isMobile ? "w-full" : ""
+        } px-4 py-2 rounded bg-black text-white hover:opacity-90 transition`}
       >
         Sign up for free
       </button>

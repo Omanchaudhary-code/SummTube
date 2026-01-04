@@ -40,7 +40,7 @@ const cardsData = [
 
 
   return (
-     <div className='wrapper min-h-screen w-screen'>
+     <div className='wrapper min-h-screen w-full'>
         <Navbar />
         <HeroSection />
         <PrimaryCardSection cardsData={cardsData} />

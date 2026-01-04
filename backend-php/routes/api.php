@@ -23,6 +23,7 @@ $router->get('/api/health', function($request, $response) {
 $router->post('/api/auth/register', [AuthController::class, 'register']);
 $router->post('/api/auth/login', [AuthController::class, 'login']);
 $router->post('/api/auth/google', [AuthController::class, 'googleAuth']);
+$router->get('/api/auth/google/config', [AuthController::class, 'getGoogleConfig']); // ✅ ADDED
 $router->post('/api/auth/refresh', [AuthController::class, 'refresh']);
 $router->post('/api/auth/logout', [AuthController::class, 'logout']);
 
@@ -73,7 +74,7 @@ $router->get(
 
 $router->delete(
     '/api/summary/:id',
-    [SummaryController::class, 'delete'],
+    [SummaryController::class, 'deleteSummary'],
     [AuthMiddleware::class]
 );
 
@@ -130,6 +131,27 @@ if ($_ENV['APP_ENV'] === 'development' || ($_ENV['APP_DEBUG'] ?? false)) {
         } catch (\Exception $e) {
             $response->json(['error' => $e->getMessage()], 400);
         }
+    });
+    
+    // Debug: Reset guest limit
+    $router->post('/api/debug/reset-guest', function($request, $response) {
+        $guestService = new \App\Services\GuestService();
+        $identifier = $guestService->generateIdentifier(
+            $request->ip(),
+            $request->userAgent()
+        );
+        
+        // Reset guest usage
+        $db = \Core\Database::getInstance();
+        $sql = "UPDATE guest_usage SET summaries_count = 0, reset_at = NOW() + INTERVAL '24 hours' WHERE identifier = :identifier";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([':identifier' => $identifier]);
+        
+        $response->json([
+            'success' => true,
+            'message' => 'Guest limit reset',
+            'identifier' => $identifier
+        ]);
     });
 }
 

@@ -1,19 +1,25 @@
 import { Link } from "react-router-dom";
 import NavMenuBtn from "./NavMenuBtn";
 
-const Menu = ({ onLoginClick, onSignupClick }) => {
+const Menu = ({ onLoginClick, onSignupClick, isMobile }) => {
   return (
-    <ul className="flex flex-col sm:flex-row gap-4 sm:gap-8 items-center p-4 sm:p-0">
+    <ul
+      className={`flex ${
+        isMobile
+          ? "flex-col items-center gap-6 py-6"
+          : "flex-row gap-8 items-center"
+      }`}
+    >
       <li>
         <Link to="/">
-          <button className="border-b-gray-950 hover:cursor-pointer">
+          <span className="hover:opacity-70 cursor-pointer">
             Overview
-          </button>
+          </span>
         </Link>
       </li>
 
-      {/* Login / Signup Buttons */}
       <NavMenuBtn
+        isMobile={isMobile}
         onLoginClick={onLoginClick}
         onSignupClick={onSignupClick}
       />

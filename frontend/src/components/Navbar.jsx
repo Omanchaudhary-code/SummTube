@@ -1,48 +1,57 @@
-import React, { useState } from "react";
-import LogoSlogan from "./LogoSlogan.jsx";
-import Menu from "./Menu.jsx";
-import LoginModal from "../modal/LoginModal.jsx";
-import SignupModal from "../modal/SignupModal.jsx";
+import React, { useEffect, useState } from "react";
+import LogoSlogan from "./LogoSlogan";
+import Menu from "./Menu";
+import LoginModal from "../modal/LoginModal";
+import SignupModal from "../modal/SignupModal";
 import { HiMenu, HiX } from "react-icons/hi";
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSignupOpen, setIsSignupOpen] = useState(false);
 
+  /* Lock scroll when mobile menu open */
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "auto";
+  }, [isMobileMenuOpen]);
+
   return (
     <>
-      <header className="h-[10vh] w-screen flex items-center justify-center bg-[var(--bg-main)] sticky top-0 z-50 px-4 sm:px-8">
-        <nav className="h-full w-full max-w-[1300px] flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-[var(--bg-main)] shadow-sm">
+        <nav className="mx-auto max-w-[1300px] h-[64px] md:h-[72px] px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <LogoSlogan />
 
           {/* Desktop Menu */}
-          <div className="hidden sm:flex">
+          <div className="hidden md:flex items-center">
             <Menu
               onLoginClick={() => setIsLoginOpen(true)}
               onSignupClick={() => setIsSignupOpen(true)}
+              isMobile={false}
             />
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="sm:hidden">
-            <button onClick={() => setIsOpen(!isOpen)} className="text-2xl">
-              {isOpen ? <HiX /> : <HiMenu />}
-            </button>
-          </div>
+          {/* Mobile Toggle */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden text-3xl"
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? <HiX /> : <HiMenu />}
+          </button>
         </nav>
 
         {/* Mobile Menu */}
-        {isOpen && (
-          <div className="sm:hidden absolute top-[10vh] left-0 w-full bg-[var(--bg-main)] shadow-md z-40">
+        {isMobileMenuOpen && (
+          <div className="md:hidden absolute top-[64px] left-0 w-full bg-[var(--bg-main)] border-t shadow-lg animate-slideDown">
             <Menu
+              isMobile
               onLoginClick={() => {
                 setIsLoginOpen(true);
-                setIsOpen(false);
+                setIsMobileMenuOpen(false);
               }}
               onSignupClick={() => {
                 setIsSignupOpen(true);
-                setIsOpen(false);
+                setIsMobileMenuOpen(false);
               }}
             />
           </div>

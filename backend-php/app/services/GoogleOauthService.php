@@ -42,9 +42,8 @@ class GoogleOAuthService
 
             error_log('Google OAuth: Token verified for ' . ($payload['email'] ?? 'unknown'));
 
-            // FIX: Return 'google_id' instead of 'id'
             return [
-                'google_id' => $payload['sub'],  // ✅ Changed from 'id' to 'google_id'
+                'google_id' => $payload['sub'],
                 'email' => $payload['email'],
                 'name' => $payload['name'],
                 'picture' => $payload['picture'] ?? null,
@@ -104,7 +103,7 @@ class GoogleOAuthService
             $userInfo = $oauth2->userinfo->get();
 
             return [
-                'google_id' => $userInfo->id,  // ✅ Correct field name
+                'google_id' => $userInfo->id,
                 'email' => $userInfo->email,
                 'name' => $userInfo->name,
                 'picture' => $userInfo->picture,
@@ -119,6 +118,7 @@ class GoogleOAuthService
 
     /**
      * Get client configuration for frontend
+     * Only returns client_id (NOT the secret)
      * 
      * @return array Configuration data
      */

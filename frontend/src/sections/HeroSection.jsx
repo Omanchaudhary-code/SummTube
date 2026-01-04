@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 const HeroSection = () => {
   const navigate = useNavigate();
   return (
-    <div className="wrapper h-screen w-screen bg-[var(--bg-main)] text-[var(--font-sans)] overflow-hidden flex flex-col justify-between">
+    <div className="wrapper min-h-screen w-full bg-[var(--bg-main)] overflow-x-hidden flex flex-col">
       {/* <SplashCursor /> */}
       {/* <div style={{ width: '100%', height: '100%', position: 'relative' }}>
         <Antigravity
@@ -48,7 +48,7 @@ const HeroSection = () => {
 
         <div className="button">
           <button 
-          className="text-lg sm:text-xl bg-black rounded-2xl text-white py-3 sm:py-5 px-6 sm:px-12 mt-4 hover:cursor-pointer hover:scale-102"
+          className="text-lg sm:text-xl bg-black rounded-2xl text-white py-3 sm:py-5 px-6 sm:px-12 mt-4 hover:cursor-pointer hover:scale-105 transition-transform"
            onClick={() => navigate("/try")}
           >
             Try SummTube
