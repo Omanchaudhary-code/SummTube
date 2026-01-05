@@ -6,50 +6,32 @@ const Footer = () => {
   return (
     <footer className="bg-slate-50 border-t border-slate-200">
       <div className="max-w-6xl mx-auto px-4 py-10">
-        
-        {/* TOP GRID */}
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
 
-          {/* Brand Section */}
-          <div className="flex flex-col gap-4">
-            <Link to="/" className="flex items-center gap-2">
+        {/* TOP SECTION */}
+        <div className="flex flex-col gap-10 lg:flex-row lg:justify-between">
+
+          {/* LEFT */}
+          <div className="flex flex-col gap-4 text-center lg:text-left max-w-md">
+            <Link
+              to="/"
+              className="flex items-center justify-center lg:justify-start gap-2"
+            >
               <span className="border border-slate-300 p-2 rounded-md inline-flex">
-                <img
-                  src={logo}
-                  alt="SummTube Logo"
-                  className="h-6 w-auto"
-                />
+                <img src={logo} alt="SummTube Logo" className="h-6 w-auto" />
               </span>
               <h2 className="text-base font-semibold text-[var(--text-primary)]">
                 SummTube
               </h2>
             </Link>
 
-            <p className="text-sm text-[var(--text-secondary)] max-w-sm">
+            <p className="text-sm text-[var(--text-secondary)]">
               An intelligent platform that extracts, analyzes, and summarizes
               YouTube video transcripts.
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div className="flex flex-col gap-2">
-            <h4 className="font-semibold text-sm">Quick Links</h4>
-            <Link to="/" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-              Home
-            </Link>
-            <Link to="/how-it-works" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-              How It Works
-            </Link>
-            <Link to="/about" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-              About
-            </Link>
-            <Link to="/contact" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-              Contact
-            </Link>
-          </div>
-
-          {/* Connect */}
-          <div className="flex flex-col gap-3">
+          {/* RIGHT */}
+          <div className="flex flex-col gap-3 text-center lg:text-left">
             <h4 className="font-semibold text-sm">Connect</h4>
 
             <div>
@@ -66,7 +48,7 @@ const Footer = () => {
               </p>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 pt-2 justify-center lg:justify-start">
               <span className="border border-slate-300 p-2 rounded-md inline-flex">
                 <Mail size={16} />
               </span>
@@ -81,7 +63,7 @@ const Footer = () => {
         <div className="my-6 h-px bg-slate-200" />
 
         {/* BOTTOM */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-between text-center sm:text-left">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center text-center sm:text-left">
           <p className="flex items-center justify-center sm:justify-start gap-2 text-sm text-[var(--text-secondary)]">
             <Copyright size={14} />
             <span>2026 SummTube. All rights reserved.</span>
