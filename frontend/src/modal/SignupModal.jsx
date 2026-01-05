@@ -37,10 +37,8 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
         password: form.password
       });
 
-      // ✅ SUCCESS TOAST
       toast.success("Account created successfully! Please log in.");
 
-      // ✅ Switch to login modal after short delay
       setTimeout(() => {
         onSwitchToLogin();
       }, 800);
@@ -50,10 +48,7 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
         err.response?.data?.message ||
         "Something went wrong. Please try again.";
 
-      // ❌ ERROR TOAST
       toast.error(backendMessage);
-
-      // Optional inline error (keeps form accessible)
       setError(backendMessage);
     } finally {
       setLoading(false);
@@ -63,19 +58,38 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="
+        fixed inset-0 z-50 flex items-center justify-center
+        bg-black/40 backdrop-blur-sm
+        px-3 sm:px-0
+      "
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-[450px] rounded-xl bg-white p-6 shadow-xl animate-scaleIn text-center"
+        className="
+          w-full max-w-[420px] sm:max-w-[450px]
+          max-h-[90vh] overflow-y-auto
+          rounded-xl bg-white
+          p-5 sm:p-6
+          shadow-xl animate-scaleIn
+          text-center
+        "
       >
         {/* Logo */}
         <div className="flex justify-center mb-3">
-          <img src={logo} alt="SummTube logo" className="w-1/4" />
+          <img
+            src={logo}
+            alt="SummTube logo"
+            className="w-20 sm:w-24"
+          />
         </div>
 
-        <h2 className="text-2xl font-medium">Welcome to SummTube</h2>
-        <p className="text-gray-500 mb-6">Register with your email</p>
+        <h2 className="text-xl sm:text-2xl font-medium">
+          Welcome to SummTube
+        </h2>
+        <p className="text-gray-500 mb-5 sm:mb-6 text-sm sm:text-base">
+          Register with your email
+        </p>
 
         <form onSubmit={handleSubmit}>
           {/* Full Name */}
@@ -86,7 +100,13 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
             value={form.name}
             onChange={handleChange}
             required
-            className="w-full mb-3 px-3 py-2 border rounded focus:ring-1 focus:ring-black outline-none"
+            className="
+              w-full mb-3
+              px-3 py-2.5
+              text-sm sm:text-base
+              border rounded
+              focus:ring-1 focus:ring-black outline-none
+            "
           />
 
           {/* Email */}
@@ -97,7 +117,13 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
             value={form.email}
             onChange={handleChange}
             required
-            className="w-full mb-3 px-3 py-2 border rounded focus:ring-1 focus:ring-black outline-none"
+            className="
+              w-full mb-3
+              px-3 py-2.5
+              text-sm sm:text-base
+              border rounded
+              focus:ring-1 focus:ring-black outline-none
+            "
           />
 
           {/* Password */}
@@ -110,34 +136,51 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
               onChange={handleChange}
               required
               minLength={8}
-              className="w-full px-3 py-2 border rounded focus:ring-1 focus:ring-black outline-none pr-10"
+              className="
+                w-full px-3 py-2.5
+                text-sm sm:text-base
+                border rounded
+                focus:ring-1 focus:ring-black outline-none
+                pr-10
+              "
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+              className="
+                absolute right-3 top-1/2 -translate-y-1/2
+                text-gray-500
+              "
             >
               {showPassword ? <HiEyeOff size={20} /> : <HiEye size={20} />}
             </button>
           </div>
 
-          {/* Inline Error (optional, safe) */}
+          {/* Inline Error */}
           {error && (
-            <p className="text-sm text-red-600 mb-3">{error}</p>
+            <p className="text-xs sm:text-sm text-red-600 mb-3">
+              {error}
+            </p>
           )}
 
           {/* Submit */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 rounded bg-black text-white hover:bg-gray-800 transition disabled:opacity-60"
+            className="
+              w-full py-2.5
+              rounded bg-black text-white
+              text-sm sm:text-base
+              hover:bg-gray-800 transition
+              disabled:opacity-60
+            "
           >
             {loading ? "Creating account..." : "Sign Up"}
           </button>
         </form>
 
         {/* Footer */}
-        <div className="border-t mt-6 pt-4 text-sm">
+        <div className="border-t mt-5 pt-4 text-xs sm:text-sm">
           <span className="mr-2 text-gray-500">
             Already have an account?
           </span>

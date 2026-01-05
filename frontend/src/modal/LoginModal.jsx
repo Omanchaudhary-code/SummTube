@@ -50,14 +50,13 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
       }
     };
     script.onerror = () => {
-      console.error("❌ Failed to load Google SDK");
       setGoogleError("Failed to load Google Sign-In. Please refresh the page.");
     };
 
     document.body.appendChild(script);
 
     return () => {
-      // Don't remove script on unmount (other components might use it)
+      // Cleanup is handled by React
     };
   }, []);
 
@@ -74,11 +73,10 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
           text: "continue_with",
           width: googleButtonRef.current.offsetWidth || 400,
           logo_alignment: "left",
-          locale: "en", // Force English
+          locale: "en",
         });
       } catch (error) {
-        console.error("❌ Error rendering Google button:", error);
-        setGoogleError("Failed to render Google button");
+        setGoogleError("Failed to render Google button",error);
       }
     }
   }, [googleReady]);
@@ -92,11 +90,8 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
     isInitializing.current = true;
 
     try {
-      console.log("🔄 Initializing Google Sign-In...");
-
       // Fetch config from backend
       const res = await api.get("/auth/google/config");
-      console.log("✅ Config received:", res.data);
 
       if (!res.data.success) {
         throw new Error("Failed to get Google configuration");
@@ -120,17 +115,15 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
         auto_select: false,
         cancel_on_tap_outside: true,
         itp_support: true,
-        locale: "en", // Force English
+        locale: "en",
       });
 
-      console.log("✅ Google initialized with Client ID:", googleClientId.substring(0, 20) + "...");
       setGoogleReady(true);
       setGoogleError(null);
     } catch (err) {
-      console.error("❌ Google init failed:", err);
       setGoogleError(
-        err.response?.data?.message || 
-        err.message || 
+        err.response?.data?.message ||
+        err.message ||
         "Failed to initialize Google Sign-In"
       );
     } finally {
@@ -140,16 +133,10 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
 
   /* ---------------- Google Login Callback ---------------- */
   const handleGoogleResponse = async (response) => {
-    console.log("=== Google Response Received ===");
-
     if (!response.credential) {
-      console.error("❌ No credential in response");
       alert("Google sign-in failed. No credential received.");
       return;
     }
-
-    console.log("Token received (length):", response.credential.length);
-    console.log("Token (first 50 chars):", response.credential.substring(0, 50));
 
     setIsLoading(true);
 
@@ -158,29 +145,25 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
         token: response.credential,
       });
 
-      console.log("✅ Backend Response:", result.data);
-
       if (result.data.success && result.data.user) {
         // Show success message
         alert(`Welcome, ${result.data.user.name}!`);
-        
+
         // Close modal
         onClose();
-        
-        // Navigate to home or dashboard (change as needed)
-        navigate("/dashboard"); // Change this to your actual route
+
+        // Navigate to home or dashboard
+        navigate("/dashboard");
       } else {
         throw new Error("Invalid response from server");
       }
     } catch (err) {
-      console.error("❌ Google login error:", err);
-      
-      const errorMessage = 
-        err.response?.data?.message || 
-        err.response?.data?.error || 
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
         err.message ||
         "Google login failed. Please try again.";
-      
+
       alert(errorMessage);
     } finally {
       setIsLoading(false);
@@ -199,27 +182,25 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
     setIsLoading(true);
 
     try {
-      const result = await api.post("/auth/login", { 
-        email: email.trim(), 
-        password 
+      const result = await api.post("/auth/login", {
+        email: email.trim(),
+        password,
       });
 
       if (result.data.success && result.data.user) {
         alert(`Welcome back, ${result.data.user.name}!`);
         onClose();
-        navigate("/"); // Change this to your actual route
+        navigate("/dashboard");
       } else {
         throw new Error("Invalid response from server");
       }
     } catch (err) {
-      console.error("❌ Login error:", err);
-      
-      const errorMessage = 
-        err.response?.data?.message || 
-        err.response?.data?.error || 
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
         err.message ||
         "Login failed. Please check your credentials.";
-      
+
       alert(errorMessage);
     } finally {
       setIsLoading(false);
@@ -241,19 +222,18 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
       >
         {/* Logo */}
         <div className="flex justify-center mb-4">
-          <img 
-            src={logo} 
-            alt="SummTube" 
-            className="w-20 h-auto" 
+          <img
+            src={logo}
+            alt="SummTube"
+            className="w-20 h-auto"
             onError={(e) => {
-              // Fallback if logo fails to load
-              e.target.style.display = 'none';
+              e.target.style.display = "none";
             }}
           />
         </div>
 
         {/* Header */}
-        <h2 
+        <h2
           id="login-modal-title"
           className="text-2xl font-semibold mb-1 text-gray-800 text-center"
         >
@@ -333,28 +313,28 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
               </button>
             </div>
           ) : googleReady ? (
-            <div 
-              ref={googleButtonRef} 
-              className="w-full flex justify-center"
-            />
+            <div ref={googleButtonRef} className="w-full flex justify-center" />
           ) : (
             <button
               disabled
               className="w-full flex items-center justify-center gap-3 border border-gray-300 py-2.5 rounded-lg bg-gray-50 cursor-not-allowed opacity-60"
             >
-              <svg className="w-5 h-5 animate-spin text-gray-500" viewBox="0 0 24 24">
-                <circle 
-                  className="opacity-25" 
-                  cx="12" 
-                  cy="12" 
-                  r="10" 
-                  stroke="currentColor" 
+              <svg
+                className="w-5 h-5 animate-spin text-gray-500"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
                   strokeWidth="4"
                   fill="none"
                 />
-                <path 
-                  className="opacity-75" 
-                  fill="currentColor" 
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>

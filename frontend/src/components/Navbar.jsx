@@ -17,7 +17,7 @@ const Navbar = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-[var(--bg-main)] shadow-sm">
+      <header className="sticky top-0 z-50 bg-[var(--bg-main)] ">
         <nav className="mx-auto max-w-[1300px] h-[64px] md:h-[72px] px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <LogoSlogan />
 
