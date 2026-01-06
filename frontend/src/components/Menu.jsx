@@ -12,7 +12,7 @@ const Menu = ({ onLoginClick, onSignupClick, isMobile }) => {
     >
       <li>
         <Link to="/">
-          <span className="hover:opacity-70 cursor-pointer">
+          <span className=" hover:opacity-70 cursor-pointer">
             Overview
           </span>
         </Link>

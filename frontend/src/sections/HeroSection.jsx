@@ -63,7 +63,7 @@ const HeroSection = () => {
         {/* CTA Button */}
         <div className="button">
           <button
-            onClick={() => navigate("/try")}
+            onClick={() => navigate("/tryboard")}
             className="bg-black text-white rounded-2xl
                        text-base sm:text-lg md:text-xl
                        py-3 sm:py-4 px-8 sm:px-12

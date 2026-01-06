@@ -1,10 +1,15 @@
+// SignupModal.jsx
 import { useEffect, useState } from "react";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import toast from "react-hot-toast";
 import logo from "../assets/Logo.png";
 import api from "../services/api";
 
-const SignupModal = ({ onClose, onSwitchToLogin }) => {
+const SignupModal = ({
+  onClose,
+  onSwitchToLogin,
+  variant = "default" // ✅ ADDED
+}) => {
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -14,6 +19,8 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const isTryBoard = variant === "tryboard"; // ✅ ADDED
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -38,18 +45,12 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
       });
 
       toast.success("Account created successfully! Please log in.");
-
-      setTimeout(() => {
-        onSwitchToLogin();
-      }, 800);
-
+      setTimeout(onSwitchToLogin, 800);
     } catch (err) {
-      const backendMessage =
-        err.response?.data?.message ||
-        "Something went wrong. Please try again.";
-
-      toast.error(backendMessage);
-      setError(backendMessage);
+      const msg =
+        err.response?.data?.message || "Something went wrong.";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -58,135 +59,86 @@ const SignupModal = ({ onClose, onSwitchToLogin }) => {
   return (
     <div
       onClick={onClose}
-      className="
-        fixed inset-0 z-50 flex items-center justify-center
-        bg-black/40 backdrop-blur-sm
-        px-3 sm:px-0
-      "
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-3"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="
-          w-full max-w-[420px] sm:max-w-[450px]
-          max-h-[90vh] overflow-y-auto
-          rounded-xl bg-white
-          p-5 sm:p-6
-          shadow-xl animate-scaleIn
-          text-center
-        "
+        className={`
+          w-full max-w-[450px]
+          rounded-xl p-6 shadow-xl
+          animate-scaleIn text-center
+          ${isTryBoard ? "bg-white text-black" : "bg-white"}
+        `}
       >
-        {/* Logo */}
         <div className="flex justify-center mb-3">
-          <img
-            src={logo}
-            alt="SummTube logo"
-            className="w-20 sm:w-24"
-          />
+          <img src={logo} alt="logo" className="w-24" />
         </div>
 
-        <h2 className="text-xl sm:text-2xl font-medium">
+        <h2 className="text-2xl font-medium">
           Welcome to SummTube
         </h2>
-        <p className="text-gray-500 mb-5 sm:mb-6 text-sm sm:text-base">
+
+        <p className={`mb-6 ${isTryBoard ? "text-gray-700" : "text-gray-500"}`}>
           Register with your email
         </p>
 
         <form onSubmit={handleSubmit}>
-          {/* Full Name */}
           <input
-            type="text"
             name="name"
             placeholder="Full Name"
             value={form.name}
             onChange={handleChange}
             required
-            className="
-              w-full mb-3
-              px-3 py-2.5
-              text-sm sm:text-base
-              border rounded
-              focus:ring-1 focus:ring-black outline-none
-            "
+            className="w-full mb-3 px-3 py-2.5 border rounded"
           />
 
-          {/* Email */}
           <input
-            type="email"
             name="email"
+            type="email"
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
             required
-            className="
-              w-full mb-3
-              px-3 py-2.5
-              text-sm sm:text-base
-              border rounded
-              focus:ring-1 focus:ring-black outline-none
-            "
+            className="w-full mb-3 px-3 py-2.5 border rounded"
           />
 
-          {/* Password */}
           <div className="relative mb-3">
             <input
-              type={showPassword ? "text" : "password"}
               name="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={form.password}
               onChange={handleChange}
               required
-              minLength={8}
-              className="
-                w-full px-3 py-2.5
-                text-sm sm:text-base
-                border rounded
-                focus:ring-1 focus:ring-black outline-none
-                pr-10
-              "
+              className="w-full px-3 py-2.5 border rounded pr-10"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="
-                absolute right-3 top-1/2 -translate-y-1/2
-                text-gray-500
-              "
+              className="absolute right-3 top-1/2 -translate-y-1/2"
             >
-              {showPassword ? <HiEyeOff size={20} /> : <HiEye size={20} />}
+              {showPassword ? <HiEyeOff /> : <HiEye />}
             </button>
           </div>
 
-          {/* Inline Error */}
           {error && (
-            <p className="text-xs sm:text-sm text-red-600 mb-3">
-              {error}
-            </p>
+            <p className="text-sm text-red-600 mb-3">{error}</p>
           )}
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
-            className="
-              w-full py-2.5
-              rounded bg-black text-white
-              text-sm sm:text-base
-              hover:bg-gray-800 transition
-              disabled:opacity-60
-            "
+            className="w-full py-2.5 bg-black text-white rounded"
           >
-            {loading ? "Creating account..." : "Sign Up"}
+            {loading ? "Creating..." : "Sign Up"}
           </button>
         </form>
 
-        {/* Footer */}
-        <div className="border-t mt-5 pt-4 text-xs sm:text-sm">
-          <span className="mr-2 text-gray-500">
-            Already have an account?
-          </span>
+        <div className="border-t mt-5 pt-4 text-sm">
+          Already have an account?
           <button
             onClick={onSwitchToLogin}
-            className="font-medium hover:text-gray-600"
+            className="ml-2 font-medium"
           >
             Login
           </button>

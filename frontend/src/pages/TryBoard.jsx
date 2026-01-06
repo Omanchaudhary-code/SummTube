@@ -1,189 +1,533 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ListCollapse, Send, X, Menu } from "lucide-react";
 import logo from "../assets/logo.png";
-// import NavMenuBtn from "../components/NavMenuBtn";/
+import { HiEye, HiEyeOff } from "react-icons/hi";
+import { useNavigate } from "react-router-dom";
+import api from "../services/api";
+import toast from "react-hot-toast";
 
-// Mock components - replace with your actual components
-const NavMenuBtn = ({ onLoginClick, onSignupClick }) => (
-  <div className="flex gap-3">
-    <button
-      onClick={onLoginClick}
-      className="px-4 py-2 bg-white text-cyan-700 rounded-lg hover:bg-gray-100 transition-colors"
+const NavMenuBtn = ({ onLoginClick, onSignupClick, isMobile }) => {
+  return (
+    <li
+      className={`flex ${
+        isMobile ? "flex-col w-full px-6 gap-3" : "gap-3"
+      }`}
     >
-      Login
-    </button>
-    <button
-      onClick={onSignupClick}
-      className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-500 transition-colors"
-    >
-      Sign Up
-    </button>
-  </div>
-);
+      <button
+        onClick={onLoginClick}
+        className={`${
+          isMobile ? "w-full" : ""
+        } px-4 py-2 rounded border hover:bg-gray-100 transition`}
+      >
+        Login
+      </button>
+
+      <button
+        onClick={onSignupClick}
+        className={`${
+          isMobile ? "w-full" : ""
+        } px-4 py-2 rounded bg-white text-black hover:opacity-90 transition`}
+      >
+        Sign up for free
+      </button>
+    </li>
+  );
+};
+
 
 const LoginModal = ({ onClose, onSwitchToSignup }) => {
+  const navigate = useNavigate();
+  const googleButtonRef = useRef(null);
+  const isInitializing = useRef(false);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const [googleError, setGoogleError] = useState(null);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  /* ---------------- Lock background scroll ---------------- */
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, []);
+
+  /* ---------------- Load Google Identity SDK ---------------- */
+  useEffect(() => {
+    // Check if script already exists
+    const existingScript = document.querySelector(
+      'script[src="https://accounts.google.com/gsi/client"]'
+    );
+
+    if (existingScript) {
+      // Script already loaded, just initialize
+      if (window.google && !isInitializing.current) {
+        initGoogle();
+      }
+      return;
+    }
+
+    // Load the script with language parameter
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client?hl=en";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (!isInitializing.current) {
+        initGoogle();
+      }
+    };
+    script.onerror = () => {
+      setGoogleError("Failed to load Google Sign-In. Please refresh the page.");
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup is handled by React
+    };
+  }, []);
+
+  /* ---------------- Render Google Button When Ready ---------------- */
+  useEffect(() => {
+    if (googleReady && googleButtonRef.current && window.google) {
+      try {
+        // Clear any existing button
+        googleButtonRef.current.innerHTML = "";
+
+        window.google.accounts.id.renderButton(googleButtonRef.current, {
+          theme: "outline",
+          size: "large",
+          text: "continue_with",
+          width: googleButtonRef.current.offsetWidth || 400,
+          logo_alignment: "left",
+          locale: "en",
+        });
+      } catch (error) {
+        setGoogleError("Failed to render Google button",error);
+      }
+    }
+  }, [googleReady]);
+
+  /* ---------------- Init Google ---------------- */
+  const initGoogle = async () => {
+    if (isInitializing.current) {
+      return; // Prevent double initialization
+    }
+
+    isInitializing.current = true;
+
+    try {
+      // Fetch config from backend
+      const res = await api.get("/auth/google/config");
+
+      if (!res.data.success) {
+        throw new Error("Failed to get Google configuration");
+      }
+
+      if (!res.data.client_id) {
+        throw new Error("Google Client ID not configured");
+      }
+
+      // Check if Google SDK is loaded
+      if (!window.google?.accounts?.id) {
+        throw new Error("Google SDK not loaded");
+      }
+
+      const googleClientId = res.data.client_id;
+
+      // Initialize Google Sign-In
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleGoogleResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        itp_support: true,
+        locale: "en",
+      });
+
+      setGoogleReady(true);
+      setGoogleError(null);
+    } catch (err) {
+      setGoogleError(
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to initialize Google Sign-In"
+      );
+    } finally {
+      isInitializing.current = false;
+    }
+  };
+
+  /* ---------------- Google Login Callback ---------------- */
+  const handleGoogleResponse = async (response) => {
+    if (!response.credential) {
+      alert("Google sign-in failed. No credential received.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Important for cookies
-        body: JSON.stringify({ email, password }),
+      const result = await api.post("/auth/google", {
+        token: response.credential,
       });
 
-      const data = await response.json();
+      if (result.data.success && result.data.user) {
+        // Show success message
+        alert(`Welcome, ${result.data.user.name}!`);
 
-      if (data.success) {
-        alert(`Welcome back, ${data.user.name}!`);
+        // Close modal
         onClose();
-        window.location.reload(); // Refresh to load user session
+
+        // Navigate to home or dashboard
+        navigate("/dashboard");
       } else {
-        alert(data.error || "Login failed");
+        throw new Error("Invalid response from server");
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      alert("Login failed. Please try again.");
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Google login failed. Please try again.";
+
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
+  /* ---------------- Local Login ---------------- */
+  const handleLocalLogin = async (e) => {
+    e.preventDefault();
+
+    if (!email || !password) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const result = await api.post("/auth/login", {
+        email: email.trim(),
+        password,
+      });
+
+      if (result.data.success && result.data.user) {
+        alert(`Welcome back, ${result.data.user.name}!`);
+        onClose();
+        navigate("/dashboard");
+      } else {
+        throw new Error("Invalid response from server");
+      }
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Login failed. Please check your credentials.";
+
+      alert(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /* ---------------- UI ---------------- */
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-600">
-          <X size={24} />
-        </button>
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Login</h2>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg text-gray-800"
-            required
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="login-modal-title"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
+      >
+        {/* Logo */}
+        <div className="flex justify-center mb-4">
+          <img
+            src={logo}
+            alt="SummTube"
+            className="w-20 h-auto"
+            onError={(e) => {
+              e.target.style.display = "none";
+            }}
           />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg text-gray-800"
-            required
-          />
+        </div>
+
+        {/* Header */}
+        <h2
+          id="login-modal-title"
+          className="text-2xl font-semibold mb-1 text-gray-800 text-center"
+        >
+          Welcome to SummTube
+        </h2>
+        <p className="text-gray-500 mb-6 text-center">
+          Login or continue with Google
+        </p>
+
+        {/* ---------- Email Login Form ---------- */}
+        <form onSubmit={handleLocalLogin} className="space-y-4">
+          <div>
+            <input
+              type="email"
+              placeholder="Email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed transition"
+              aria-label="Email"
+            />
+          </div>
+
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
+              className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed transition"
+              aria-label="Password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              disabled={isLoading}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:cursor-not-allowed"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <HiEyeOff size={20} /> : <HiEye size={20} />}
+            </button>
+          </div>
+
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700 disabled:bg-gray-400"
+            className="w-full bg-black text-white py-2.5 rounded-lg font-medium disabled:opacity-60 disabled:cursor-not-allowed hover:bg-gray-800 transition"
           >
             {isLoading ? "Logging in..." : "Login"}
           </button>
         </form>
-        <p className="text-center mt-4 text-gray-600">
-          Don't have an account?{" "}
-          <button onClick={onSwitchToSignup} className="text-cyan-600 hover:underline">
-            Sign Up
+
+        {/* ---------- Divider ---------- */}
+        <div className="flex items-center my-6">
+          <div className="flex-1 border-t border-gray-300" />
+          <span className="px-4 text-sm text-gray-500">or</span>
+          <div className="flex-1 border-t border-gray-300" />
+        </div>
+
+        {/* ---------- Google Sign-In ---------- */}
+        <div className="w-full">
+          {googleError ? (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm text-center">
+              {googleError}
+              <button
+                onClick={() => {
+                  setGoogleError(null);
+                  isInitializing.current = false;
+                  initGoogle();
+                }}
+                className="block w-full mt-2 text-red-700 underline hover:text-red-800"
+              >
+                Retry
+              </button>
+            </div>
+          ) : googleReady ? (
+            <div ref={googleButtonRef} className="w-full flex justify-center" />
+          ) : (
+            <button
+              disabled
+              className="w-full flex items-center justify-center gap-3 border border-gray-300 py-2.5 rounded-lg bg-gray-50 cursor-not-allowed opacity-60"
+            >
+              <svg
+                className="w-5 h-5 animate-spin text-gray-500"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              <span className="text-gray-600">Loading Google Sign-In...</span>
+            </button>
+          )}
+        </div>
+
+        {/* ---------- Footer ---------- */}
+        <div className="border-t border-gray-200 mt-6 pt-4 text-center text-sm">
+          <span className="text-gray-500">New to SummTube? </span>
+          <button
+            onClick={onSwitchToSignup}
+            className="font-medium text-gray-800 hover:text-gray-600 transition"
+            disabled={isLoading}
+          >
+            Create an account
           </button>
-        </p>
+        </div>
       </div>
     </div>
   );
 };
 
-const SignupModal = ({ onClose, onSwitchToLogin }) => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+const SignupModal = ({
+  onClose,
+  onSwitchToLogin,
+  variant = "default" 
+}) => {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: ""
+  });
 
-  const handleSignup = async (e) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const isTryBoard = variant === "tryboard"; 
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => (document.body.style.overflow = "auto");
+  }, []);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setError("");
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
+    setError("");
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ name, email, password }),
+      await api.post("/auth/register", {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        alert(`Welcome, ${data.user.name}!`);
-        onClose();
-        window.location.reload();
-      } else {
-        alert(data.error || "Signup failed");
-      }
-    } catch (error) {
-      console.error("Signup error:", error);
-      alert("Signup failed. Please try again.");
+      toast.success("Account created successfully! Please log in.");
+      setTimeout(onSwitchToLogin, 800);
+    } catch (err) {
+      const msg =
+        err.response?.data?.message || "Something went wrong.";
+      toast.error(msg);
+      setError(msg);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-600">
-          <X size={24} />
-        </button>
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Sign Up</h2>
-        <form onSubmit={handleSignup} className="space-y-4">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-3"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`
+          w-full max-w-[450px]
+          rounded-xl p-6 shadow-xl
+          animate-scaleIn text-center
+          ${isTryBoard ? "bg-white text-black" : "bg-white"}
+        `}
+      >
+        <div className="flex justify-center mb-3">
+          <img src={logo} alt="logo" className="w-24" />
+        </div>
+
+        <h2 className="text-2xl font-medium">
+          Welcome to SummTube
+        </h2>
+
+        <p className={`mb-6 ${isTryBoard ? "text-gray-700" : "text-gray-500"}`}>
+          Register with your email
+        </p>
+
+        <form onSubmit={handleSubmit}>
           <input
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg text-gray-800"
+            name="name"
+            placeholder="Full Name"
+            value={form.name}
+            onChange={handleChange}
             required
+            className="w-full mb-3 px-3 py-2.5 border rounded"
           />
+
           <input
+            name="email"
             type="email"
             placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg text-gray-800"
+            value={form.email}
+            onChange={handleChange}
             required
+            className="w-full mb-3 px-3 py-2.5 border rounded"
           />
-          <input
-            type="password"
-            placeholder="Password (min 8 characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg text-gray-800"
-            minLength={8}
-            required
-          />
+
+          <div className="relative mb-3">
+            <input
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2.5 border rounded pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+            >
+              {showPassword ? <HiEyeOff /> : <HiEye />}
+            </button>
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-600 mb-3">{error}</p>
+          )}
+
           <button
             type="submit"
-            disabled={isLoading}
-            className="w-full bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700 disabled:bg-gray-400"
+            disabled={loading}
+            className="w-full py-2.5 bg-black text-white rounded"
           >
-            {isLoading ? "Creating account..." : "Sign Up"}
+            {loading ? "Creating..." : "Sign Up"}
           </button>
         </form>
-        <p className="text-center mt-4 text-gray-600">
-          Already have an account?{" "}
-          <button onClick={onSwitchToLogin} className="text-cyan-600 hover:underline">
+
+        <div className="border-t mt-5 pt-4 text-sm">
+          Already have an account?
+          <button
+            onClick={onSwitchToLogin}
+            className="ml-2 font-medium"
+          >
             Login
           </button>
-        </p>
+        </div>
       </div>
     </div>
   );
@@ -240,10 +584,10 @@ const TryBoard = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Important for cookies
+        credentials: "include", 
         body: JSON.stringify({
-          video_url: link,  // ✅ Correct field name
-          summary_type: "brief",
+          video_url: link,  
+          summary_type: "detailed",
         }),
       });
 
