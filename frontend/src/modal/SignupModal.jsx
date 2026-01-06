@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import toast from "react-hot-toast";
-import logo from "../assets/Logo.png";
+import logo from "../assets/logo.png";
 import api from "../services/api";
 
 const SignupModal = ({
