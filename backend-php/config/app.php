@@ -18,7 +18,7 @@ return [
         'expiry' => (int)($_ENV['JWT_EXPIRY'] ?? 604800),
     ],
     
-    // Google OAuth Configuration (ADD THIS)
+    // Google OAuth Configuration
     'google' => [
         'client_id' => $_ENV['GOOGLE_CLIENT_ID'] ?? '',
         'client_secret' => $_ENV['GOOGLE_CLIENT_SECRET'] ?? '',

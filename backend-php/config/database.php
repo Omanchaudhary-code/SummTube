@@ -1,20 +1,12 @@
 <?php
 
-/**
- * Database Configuration
- * Supports both MySQL and PostgreSQL (Neon)
- * 
- * Switch between databases by changing DB_CONNECTION in .env:
- * - DB_CONNECTION=mysql (for local MySQL/MariaDB)
- * - DB_CONNECTION=pgsql (for Neon PostgreSQL)
- */
 
 $connection = $_ENV['DB_CONNECTION'] ?? 'mysql';
 
 if ($connection === 'pgsql') {
-    // ==========================================
+
     // PostgreSQL Configuration (Neon)
-    // ==========================================
+
     return [
         'connection' => 'pgsql',
         'driver' => 'pgsql',
@@ -38,9 +30,9 @@ if ($connection === 'pgsql') {
         ]
     ];
 } else {
-    // ==========================================
+
     // MySQL Configuration (Local/Cloud)
-    // ==========================================
+
     return [
         'connection' => 'mysql',
         'driver' => 'mysql',
