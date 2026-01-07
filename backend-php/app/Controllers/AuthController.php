@@ -21,9 +21,9 @@ class AuthController
      */
     private function setTokenCookies(Response $response, string $accessToken, string $refreshToken): void
     {
-        $secure = filter_var($_ENV['COOKIE_SECURE'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $secure = filter_var($_ENV['COOKIE_SECURE'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $domain = $_ENV['COOKIE_DOMAIN'] ?? '';
-        $samesite = $_ENV['COOKIE_SAMESITE'] ?? 'Lax';
+        $samesite = $_ENV['COOKIE_SAMESITE'] ?? 'None'; // CHANGED: Lax -> None
         $httponly = filter_var($_ENV['COOKIE_HTTPONLY'] ?? true, FILTER_VALIDATE_BOOLEAN);
         
         // Access token cookie (15 minutes)
@@ -61,6 +61,7 @@ class AuthController
     private function clearTokenCookies(Response $response): void
     {
         $domain = $_ENV['COOKIE_DOMAIN'] ?? '';
+        $samesite = $_ENV['COOKIE_SAMESITE'] ?? 'None'; // CHANGED: Lax -> None
         
         setcookie(
             'access_token',
@@ -71,7 +72,7 @@ class AuthController
                 'domain' => $domain,
                 'secure' => true,
                 'httponly' => true,
-                'samesite' => 'Lax'
+                'samesite' => $samesite // CHANGED: Lax -> None
             ]
         );
 
@@ -84,7 +85,7 @@ class AuthController
                 'domain' => $domain,
                 'secure' => true,
                 'httponly' => true,
-                'samesite' => 'Lax'
+                'samesite' => $samesite // CHANGED: Lax -> None
             ]
         );
     }
