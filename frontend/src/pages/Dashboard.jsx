@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ListCollapse, Send, Menu, Download, Copy, Check, LogOut, User } from "lucide-react";
+import api from "../services/api.js"; 
 
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -47,16 +48,9 @@ const Dashboard = () => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/user/profile", {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await response.json();
-      if (data.success) {
-        setUser(data.user);
+      const response = await api.get("/user/profile");
+      if (response.data.success) {
+        setUser(response.data.user);
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -65,16 +59,9 @@ const Dashboard = () => {
 
   const fetchHistory = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/summary/history", {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await response.json();
-      if (data.success) {
-        setHistory(data.summaries || []);
+      const response = await api.get("/summary/history");
+      if (response.data.success) {
+        setHistory(response.data.summaries || []);
       }
     } catch (error) {
       console.error("Error fetching history:", error);
@@ -94,32 +81,23 @@ const Dashboard = () => {
     setIsGenerating(false);
 
     try {
-      const response = await fetch("http://localhost:8080/api/summary", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          video_url: link,
-          summary_type: "detailed"
-        }),
+      const response = await api.post("/summary", {
+        video_url: link,
+        summary_type: "detailed"
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setSummary(data);
+      if (response.data.success) {
+        setSummary(response.data);
         setIsGenerating(true);
         setLink("");
         showNotification("Summary generated successfully!");
         fetchHistory();
       } else {
-        throw new Error(data.error || data.message || "Failed to generate summary");
+        throw new Error(response.data.error || response.data.message || "Failed to generate summary");
       }
     } catch (error) {
       console.error("Error submitting link:", error);
-      const errorMsg = error.message || "Failed to generate summary. Please try again.";
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || "Failed to generate summary. Please try again.";
       setError(errorMsg);
       showNotification(errorMsg, "error");
     } finally {
@@ -148,13 +126,7 @@ const Dashboard = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:8080/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      await api.post("/auth/logout");
       showNotification("Logged out successfully!");
       setTimeout(() => {
         window.location.href = "/";
@@ -167,22 +139,15 @@ const Dashboard = () => {
 
   const loadHistoryItem = async (summaryId) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/summary/${summaryId}`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await response.json();
-      if (data.success) {
-        setSummary(data);
-        setDisplayedText(data.summary);
+      const response = await api.get(`/summary/${summaryId}`);
+      if (response.data.success) {
+        setSummary(response.data);
+        setDisplayedText(response.data.summary);
         setIsGenerating(false);
         setError(null);
       }
     } catch (error) {
-      showNotification("Failed to load summary",error);
+      showNotification("Failed to load summary", error);
     }
   };
 
