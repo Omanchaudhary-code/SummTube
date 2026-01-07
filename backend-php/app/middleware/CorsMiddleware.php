@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Middleware;
 
 use Core\Middleware;
@@ -30,7 +31,7 @@ class CorsMiddleware extends Middleware
             $response->header('Access-Control-Allow-Credentials', 'true');
         }
         
-        // ✅ ADD THIS - Fixes Google OAuth COOP warning
+        // Fixes Google OAuth COOP warning
         $response->header('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
         
         // Handle preflight OPTIONS request
