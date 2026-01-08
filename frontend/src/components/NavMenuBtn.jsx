@@ -1,6 +1,6 @@
 const NavMenuBtn = ({ onLoginClick, onSignupClick, isMobile }) => {
   return (
-    <li
+    <div  // Changed from <li> to <div>
       className={`flex ${
         isMobile ? "flex-col w-full px-6 gap-3" : "gap-3"
       }`}
@@ -22,7 +22,7 @@ const NavMenuBtn = ({ onLoginClick, onSignupClick, isMobile }) => {
       >
         Sign up for free
       </button>
-    </li>
+    </div>  // Changed from </li> to </div>
   );
 };
 
