@@ -3,7 +3,7 @@ import { ListCollapse, Send, X, Menu } from "lucide-react";
 import logo from "../assets/logo.png";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api";
+import api from "../services/api.js";
 import toast from "react-hot-toast";
 
 const NavMenuBtn = ({ onLoginClick, onSignupClick, isMobile }) => {
@@ -532,7 +532,6 @@ const SignupModal = ({
     </div>
   );
 };
-
 const TryBoard = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSignupOpen, setIsSignupOpen] = useState(false);
@@ -550,12 +549,10 @@ const TryBoard = () => {
 
   const fetchGuestStatus = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/guest/status", {
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (data.success) {
-        setTriesLeft(data.status.triesLeft);
+      const response = await api.get("/guest/status");
+      
+      if (response.data.success) {
+        setTriesLeft(response.data.status.triesLeft);
       }
     } catch (error) {
       console.error("Error fetching guest status:", error);
@@ -579,36 +576,30 @@ const TryBoard = () => {
     setSummary(null);
 
     try {
-      const response = await fetch("http://localhost:8080/api/summary/guest", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", 
-        body: JSON.stringify({
-          video_url: link,  
-          summary_type: "detailed",
-        }),
+      const response = await api.post("/summary/guest", {
+        video_url: link,
+        summary_type: "detailed",
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setSummary(data);
-        setTriesLeft(data.guest_status.triesLeft);
+      if (response.data.success) {
+        setSummary(response.data);
+        setTriesLeft(response.data.guest_status.triesLeft);
         setLink("");
 
-        if (data.message) {
-          alert(data.message);
+        if (response.data.message) {
+          alert(response.data.message);
         }
       } else {
-        setError(data.error || data.message || "Failed to generate summary");
-        alert(data.error || "Failed to generate summary. Please try again.");
+        setError(response.data.error || response.data.message || "Failed to generate summary");
+        alert(response.data.error || "Failed to generate summary. Please try again.");
       }
     } catch (error) {
       console.error("Error submitting link:", error);
-      setError("Network error. Please check your connection.");
-      alert("Failed to submit link. Please try again.");
+      const errorMsg = error.response?.data?.error || 
+                       error.response?.data?.message || 
+                       "Network error. Please check your connection.";
+      setError(errorMsg);
+      alert(errorMsg);
     } finally {
       setIsLoading(false);
     }
