@@ -15,9 +15,10 @@ class AIService:
         # Configure the API
         genai.configure(api_key=self.api_key)
         
-        # Using gemini-2.5-flash
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
-        logger.info("Gemini AI initialized successfully with gemini-2.5-flash")
+        # Use env var for model or default to gemini-1.5-flash
+        model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        self.model = genai.GenerativeModel(model_name)
+        logger.info(f"Gemini AI initialized successfully with {model_name}")
     
     async def generate_summary(
         self, 
@@ -79,5 +80,12 @@ Transcript:
             }
             
         except Exception as e:
+            # Check for Resource Exhausted (429)
+            error_str = str(e)
+            if "429" in error_str or "Resource has been exhausted" in error_str:
+                logger.error(f"AI Rate Limit Reached: {error_str}")
+                # Re-raise as a distinct error that the route handler can catch
+                raise ResourceWarning(f"AI Service overloaded (429): {error_str}")
+            
             logger.error(f"AI generation error: {str(e)}")
             raise ValueError(f"Failed to generate summary: {str(e)}")

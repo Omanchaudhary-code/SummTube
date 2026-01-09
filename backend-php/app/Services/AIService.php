@@ -44,38 +44,59 @@ class AIService
             error_log("🔍 Video URL: $videoUrl");
             error_log("🔍 Summary Type: $summaryType");
 
-            // Initialize cURL
-            $ch = curl_init($url);
-
             // Prepare JSON payload with summary_type
             $payload = json_encode([
                 'video_url' => $videoUrl,
                 'summary_type' => $summaryType
             ]);
 
-            // Configure cURL options
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => $payload,
-                CURLOPT_HTTPHEADER => [
-                    'Content-Type: application/json',
-                    'Accept: application/json',
-                    'Content-Length: ' . strlen($payload)
-                ],
-                CURLOPT_TIMEOUT => $this->timeout,
-                CURLOPT_CONNECTTIMEOUT => 10,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_MAXREDIRS => 3
-            ]);
+            $maxRetries = 3;
+            $attempt = 0;
+            $response = false;
+            $httpCode = 0;
+            $curlError = '';
+            $curlErrno = 0;
 
-            // Execute request
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            $curlErrno = curl_errno($ch);
+            while ($attempt < $maxRetries) {
+                $attempt++;
 
-            curl_close($ch);
+                // Initialize cURL per attempt to avoid reused handle issues
+                $ch = curl_init($url);
+
+                // Configure cURL options
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => $payload,
+                    CURLOPT_HTTPHEADER => [
+                        'Content-Type: application/json',
+                        'Accept: application/json',
+                        'Content-Length: ' . strlen($payload)
+                    ],
+                    CURLOPT_TIMEOUT => $this->timeout,
+                    CURLOPT_CONNECTTIMEOUT => 10,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_MAXREDIRS => 3
+                ]);
+
+                // Execute request
+                $response = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $curlError = curl_error($ch);
+                $curlErrno = curl_errno($ch);
+
+                curl_close($ch);
+
+                // If success or permanent client error (4xx but not 429), break
+                if ($httpCode >= 200 && $httpCode < 500 && $httpCode !== 429) {
+                    break;
+                }
+
+                if ($attempt < $maxRetries) {
+                    error_log("⚠️ AI Service attempt $attempt failed ($httpCode). Retrying...");
+                    sleep($attempt); // Simple backoff: 1s, 2s, 3s
+                }
+            }
 
             // Log response details for debugging
             error_log("📡 AI Service Response Code: $httpCode");

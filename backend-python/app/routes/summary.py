@@ -63,6 +63,9 @@ async def create_summary(request: SummaryRequest):
     except ValueError as e:
         logger.error(f"Validation error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
+    except ResourceWarning as e:
+        logger.error(f"Rate limit exceeded: {str(e)}")
+        raise HTTPException(status_code=429, detail="AI Service is currently overloaded. Please try again later.")
     except Exception as e:
         logger.error(f"Error generating summary: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate summary: {str(e)}")
