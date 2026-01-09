@@ -28,15 +28,25 @@ class Response
 
         $this->statusCode = $statusCode;
         $this->header('Content-Type', 'application/json');
-        
+
         http_response_code($this->statusCode);
-        
+
         foreach ($this->headers as $name => $value) {
             header("$name: $value");
         }
-        
-        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        
+
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        if ($json === false) {
+            error_log("❌ JSON encode failed: " . json_last_error_msg());
+            $json = json_encode([
+                'error' => 'Internal server error',
+                'message' => 'Failed to encode response: ' . json_last_error_msg()
+            ]);
+        }
+
+        echo $json;
+
         $this->sent = true;
     }
 
@@ -55,15 +65,15 @@ class Response
 
         $this->statusCode = $statusCode;
         $this->header('Content-Type', 'text/plain');
-        
+
         http_response_code($this->statusCode);
-        
+
         foreach ($this->headers as $name => $value) {
             header("$name: $value");
         }
-        
+
         echo $text;
-        
+
         $this->sent = true;
     }
 
@@ -82,15 +92,15 @@ class Response
 
         $this->statusCode = $statusCode;
         $this->header('Content-Type', 'text/html');
-        
+
         http_response_code($this->statusCode);
-        
+
         foreach ($this->headers as $name => $value) {
             header("$name: $value");
         }
-        
+
         echo $html;
-        
+
         $this->sent = true;
     }
 

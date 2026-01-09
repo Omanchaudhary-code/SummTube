@@ -121,26 +121,41 @@ class SummaryController
         }
 
         try {
+            error_log("🚀 Starting summary generation for User ID: $userId");
+
             // Generate summary via AI service
             $result = $this->aiService->generateSummary($videoUrl, $summaryType);
+            error_log("✅ AI Service summary generated");
 
             // Save to database
-            $summaryId = $this->summaryModel->create([
-                'user_id' => $userId,
-                'video_url' => $videoUrl,
-                'video_id' => $result['video_id'] ?? null,
-                'video_title' => $result['title'] ?? 'Unknown',
-                'thumbnail' => $result['thumbnail'] ?? null,
-                'duration' => $result['duration'] ?? 0,
-                'summary_text' => $result['summary'] ?? '',
-                'summary_type' => $summaryType,
-                'original_text' => '', // Can store transcript if needed
-                'transcript_length' => $result['transcript_length'] ?? 0,
-                'processing_time' => $result['processing_time'] ?? 0
-            ]);
+            try {
+                $summaryId = $this->summaryModel->create([
+                    'user_id' => $userId,
+                    'video_url' => $videoUrl,
+                    'video_id' => $result['video_id'] ?? null,
+                    'video_title' => $result['title'] ?? 'Unknown',
+                    'thumbnail' => $result['thumbnail'] ?? null,
+                    'duration' => $result['duration'] ?? 0,
+                    'summary_text' => $result['summary'] ?? '',
+                    'summary_type' => $summaryType,
+                    'original_text' => '', // Can store transcript if needed
+                    'transcript_length' => $result['transcript_length'] ?? 0,
+                    'processing_time' => $result['processing_time'] ?? 0
+                ]);
+                error_log("✅ Database record created: ID $summaryId");
+            } catch (\Exception $dbError) {
+                error_log("❌ Database save failed: " . $dbError->getMessage());
+                throw new \Exception("Failed to save summary to history: " . $dbError->getMessage());
+            }
 
             // Update usage stats
-            $this->usageModel->incrementSummaries($userId);
+            try {
+                $this->usageModel->incrementSummaries($userId);
+                error_log("✅ Usage incremented");
+            } catch (\Exception $usageError) {
+                error_log("⚠️ Usage increment failed (non-critical): " . $usageError->getMessage());
+                // Don't fail the whole request for usage tracking
+            }
 
             $response->json([
                 'success' => true,
@@ -158,9 +173,11 @@ class SummaryController
             ], 201);
 
         } catch (\Exception $e) {
+            error_log("🔥 Summary Creation Error: " . $e->getMessage());
             $response->json([
                 'error' => 'Failed to generate summary',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
+                'trace' => ($_ENV['APP_DEBUG'] ?? false) ? $e->getTraceAsString() : null
             ], 500);
         }
     }

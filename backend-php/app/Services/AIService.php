@@ -109,6 +109,8 @@ class AIService
                 throw new \Exception($errorMsg);
             }
 
+            error_log("📦 AI Response Raw: " . $response);
+
             // Decode JSON response
             $result = json_decode($response, true);
 
