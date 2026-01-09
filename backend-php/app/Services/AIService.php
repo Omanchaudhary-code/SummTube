@@ -97,16 +97,16 @@ class AIService
                 if ($response) {
                     $errorData = json_decode($response, true);
                     if ($errorData && isset($errorData['detail'])) {
-                        $errorMsg .= ": " . $errorData['detail'];
+                        $errorMsg = $errorData['detail'];
                     } elseif ($errorData && isset($errorData['message'])) {
-                        $errorMsg .= ": " . $errorData['message'];
+                        $errorMsg = $errorData['message'];
                     } else {
                         $errorMsg .= " - Raw: " . substr($response, 0, 100);
                     }
                 } else {
                     $errorMsg .= " - No response body";
                 }
-                throw new \Exception($errorMsg);
+                throw new \Exception($errorMsg, $httpCode);
             }
 
             error_log("📦 AI Response Raw: " . $response);

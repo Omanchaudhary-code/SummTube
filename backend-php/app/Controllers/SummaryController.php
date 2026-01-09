@@ -94,10 +94,14 @@ class SummaryController
             ], 200);
 
         } catch (\Exception $e) {
+            // Use the exception code if it's a valid HTTP error code (4xx or 5xx)
+            $code = $e->getCode();
+            $statusCode = ($code >= 400 && $code < 600) ? $code : 500;
+
             $response->json([
                 'error' => $e->getMessage(),
                 'message' => 'Try checking if the AI service URL is correct in your environment settings.'
-            ], 500);
+            ], $statusCode);
         }
     }
 
@@ -174,11 +178,16 @@ class SummaryController
 
         } catch (\Exception $e) {
             error_log("🔥 Summary Creation Error: " . $e->getMessage());
+
+            // Use the exception code if it's a valid HTTP error code (4xx or 5xx)
+            $code = $e->getCode();
+            $statusCode = ($code >= 400 && $code < 600) ? $code : 500;
+
             $response->json([
                 'error' => 'Failed to generate summary',
                 'message' => $e->getMessage(),
                 'trace' => ($_ENV['APP_DEBUG'] ?? false) ? $e->getTraceAsString() : null
-            ], 500);
+            ], $statusCode);
         }
     }
 
