@@ -55,9 +55,9 @@ return [
 
     // Cookie Configuration (ADD THIS for secure cookies)
     'cookie' => [
-        'secure' => filter_var($_ENV['COOKIE_SECURE'] ?? false, FILTER_VALIDATE_BOOLEAN),
+        'secure' => filter_var($_ENV['COOKIE_SECURE'] ?? true, FILTER_VALIDATE_BOOLEAN),
         'httponly' => filter_var($_ENV['COOKIE_HTTPONLY'] ?? true, FILTER_VALIDATE_BOOLEAN),
-        'samesite' => $_ENV['COOKIE_SAMESITE'] ?? 'Lax',
+        'samesite' => $_ENV['COOKIE_SAMESITE'] ?? 'None',
         'domain' => $_ENV['COOKIE_DOMAIN'] ?? '',
         'access_token_name' => $_ENV['ACCESS_TOKEN_COOKIE_NAME'] ?? 'access_token',
         'refresh_token_name' => $_ENV['REFRESH_TOKEN_COOKIE_NAME'] ?? 'refresh_token',

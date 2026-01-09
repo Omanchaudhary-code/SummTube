@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ListCollapse, Send, Menu, Download, Copy, Check, LogOut, User } from "lucide-react";
-import api from "../services/api.js"; 
+import api from "../services/api.js";
 
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -151,26 +151,24 @@ const Dashboard = () => {
     }
   };
 
-  const hasStartedGeneration = summary || isLoading;
+  const hasStartedGeneration = summary || isLoading || error;
 
   return (
     <div className="h-screen w-screen flex bg-[#181818] text-white overflow-hidden">
       {/* Notification Toast */}
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg animate-fade-in ${
-          notification.type === "error" 
-            ? "bg-red-600 text-white" 
+        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg animate-fade-in ${notification.type === "error"
+            ? "bg-red-600 text-white"
             : "bg-green-600 text-white"
-        }`}>
+          }`}>
           {notification.message}
         </div>
       )}
 
       {/* LEFT SIDEBAR */}
       <div
-        className={`h-full bg-[#202124] flex-shrink-0 transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? "w-64" : "w-0 md:w-16"
-        } overflow-hidden`}
+        className={`h-full bg-[#202124] flex-shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-64" : "w-0 md:w-16"
+          } overflow-hidden`}
       >
         <div className={`h-full flex flex-col ${isSidebarOpen ? "p-5" : "p-2 md:p-3"}`}>
           {/* Logo and Toggle */}
