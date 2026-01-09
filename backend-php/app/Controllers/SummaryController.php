@@ -184,7 +184,7 @@ class SummaryController
             $statusCode = ($code >= 400 && $code < 600) ? $code : 500;
 
             $response->json([
-                'error' => 'Failed to generate summary',
+                'error' => $e->getMessage(),
                 'message' => $e->getMessage(),
                 'trace' => ($_ENV['APP_DEBUG'] ?? false) ? $e->getTraceAsString() : null
             ], $statusCode);
