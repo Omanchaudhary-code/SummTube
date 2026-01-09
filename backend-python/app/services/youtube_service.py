@@ -95,7 +95,8 @@ class YouTubeService:
                 except Exception as fallback_err:
                     logger.error(f"Fallback transcript extraction failed: {str(fallback_err)}")
                     if 'transcript' not in locals() or not transcript:
-                        raise ValueError(f"Failed to fetch transcript (Bot detected or no captions). Error: {str(e)}")
+                        error_detail = str(e) if 'e' in locals() else "Transcript unavailable"
+                        raise ValueError(f"Failed to fetch transcript (Bot detected or no captions). Error: {error_detail}")
             
             return {
                 "video_id": video_id,
