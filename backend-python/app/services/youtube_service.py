@@ -54,6 +54,7 @@ class YouTubeService:
                 'geo_bypass': True,
             }
             
+            error_detail = "Unknown error"
             try:
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
@@ -77,7 +78,8 @@ class YouTubeService:
                         logger.info("Using auto-generated English captions from yt-dlp")
                         transcript = self._extract_text_from_subtitles(automatic_captions['en'])
             except Exception as e:
-                logger.warning(f"yt-dlp failed to fetch video data, trying fallback: {str(e)}")
+                error_detail = str(e)
+                logger.warning(f"yt-dlp failed to fetch video data, trying fallback: {error_detail}")
                 # Fallback to youtube-transcript-api for transcript and a basic title
                 title = "YouTube Video"
                 duration = 0
@@ -95,7 +97,6 @@ class YouTubeService:
                 except Exception as fallback_err:
                     logger.error(f"Fallback transcript extraction failed: {str(fallback_err)}")
                     if 'transcript' not in locals() or not transcript:
-                        error_detail = str(e) if 'e' in locals() else "Transcript unavailable"
                         raise ValueError(f"Failed to fetch transcript (Bot detected or no captions). Error: {error_detail}")
             
             return {
