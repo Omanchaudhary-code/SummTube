@@ -147,7 +147,15 @@ class AuthController
             $response->json([
                 'success' => true,
                 'message' => 'Registration successful',
-                'user' => $result['user']
+                'user' => $result['user'],
+                'cookie_debug' => [
+                    'headers_sent' => headers_sent($file, $line),
+                    'file' => $file,
+                    'line' => $line,
+                    'cookie_domain' => $_ENV['COOKIE_DOMAIN'] ?? 'null',
+                    'cookie_samesite' => $_ENV['COOKIE_SAMESITE'] ?? 'None',
+                    'cookie_secure' => $_ENV['COOKIE_SECURE'] ?? 'true'
+                ]
             ], 201);
 
         } catch (\Exception $e) {
@@ -201,7 +209,15 @@ class AuthController
             $response->json([
                 'success' => true,
                 'message' => 'Login successful',
-                'user' => $result['user']
+                'user' => $result['user'],
+                'cookie_debug' => [
+                    'headers_sent' => headers_sent($file, $line),
+                    'file' => $file,
+                    'line' => $line,
+                    'cookie_domain' => $_ENV['COOKIE_DOMAIN'] ?? 'null',
+                    'cookie_samesite' => $_ENV['COOKIE_SAMESITE'] ?? 'None',
+                    'cookie_secure' => $_ENV['COOKIE_SECURE'] ?? 'true'
+                ]
             ], 200);
 
         } catch (\Exception $e) {
