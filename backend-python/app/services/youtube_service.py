@@ -148,7 +148,7 @@ class YouTubeService:
                 detailed_error = " | ".join(error_details)
                 logger.error(f"No transcript found for {video_id}. Errors: {detailed_error}")
                 
-                if "Sign in to confirm you're not a bot" in detailed_error or "403" in detailed_error or "429" in detailed_error or "Too Many Requests" in detailed_error:
+                if "Sign in to confirm" in detailed_error or "403" in detailed_error or "429" in detailed_error or "Too Many Requests" in detailed_error:
                     raise ValueError("YouTube blocked the request (Bot detected). Please try again in 15-20 minutes or use a different video link.")
                 
                 raise ValueError("Could not fetch transcript for this video. It may have captions disabled or be age-restricted.")
