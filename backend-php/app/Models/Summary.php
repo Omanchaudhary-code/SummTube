@@ -19,6 +19,8 @@ class Summary
      */
     public function create(array $data): int
     {
+        $driver = Database::getDriver();
+
         $sql = "INSERT INTO {$this->table} (
             user_id, 
             video_url, 
@@ -47,22 +49,41 @@ class Summary
             NOW()
         )";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            ':user_id' => $data['user_id'],
-            ':video_url' => $data['video_url'],
-            ':video_id' => $data['video_id'] ?? null,
-            ':video_title' => $data['video_title'] ?? 'Unknown',
-            ':thumbnail' => $data['thumbnail'] ?? null,
-            ':duration' => $data['duration'] ?? 0,
-            ':original_text' => $data['original_text'] ?? '',
-            ':summary_text' => $data['summary_text'],
-            ':summary_type' => $data['summary_type'] ?? 'detailed',
-            ':transcript_length' => $data['transcript_length'] ?? 0,
-            ':processing_time' => $data['processing_time'] ?? 0
-        ]);
-
-        return (int) $this->db->lastInsertId();
+        if ($driver === 'pgsql') {
+            $sql .= " RETURNING id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':user_id' => $data['user_id'],
+                ':video_url' => $data['video_url'],
+                ':video_id' => $data['video_id'] ?? null,
+                ':video_title' => $data['video_title'] ?? 'Unknown',
+                ':thumbnail' => $data['thumbnail'] ?? null,
+                ':duration' => $data['duration'] ?? 0,
+                ':original_text' => $data['original_text'] ?? '',
+                ':summary_text' => $data['summary_text'],
+                ':summary_type' => $data['summary_type'] ?? 'detailed',
+                ':transcript_length' => $data['transcript_length'] ?? 0,
+                ':processing_time' => $data['processing_time'] ?? 0
+            ]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int) $result['id'];
+        } else {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':user_id' => $data['user_id'],
+                ':video_url' => $data['video_url'],
+                ':video_id' => $data['video_id'] ?? null,
+                ':video_title' => $data['video_title'] ?? 'Unknown',
+                ':thumbnail' => $data['thumbnail'] ?? null,
+                ':duration' => $data['duration'] ?? 0,
+                ':original_text' => $data['original_text'] ?? '',
+                ':summary_text' => $data['summary_text'],
+                ':summary_type' => $data['summary_type'] ?? 'detailed',
+                ':transcript_length' => $data['transcript_length'] ?? 0,
+                ':processing_time' => $data['processing_time'] ?? 0
+            ]);
+            return (int) $this->db->lastInsertId();
+        }
     }
 
     /**
