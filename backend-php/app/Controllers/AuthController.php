@@ -206,8 +206,8 @@ class AuthController
      */
     public function refresh(Request $request, Response $response): void
     {
-        // Get refresh token from cookie
-        $refreshToken = $_COOKIE['refresh_token'] ?? '';
+        $refreshTokenName = $_ENV['REFRESH_TOKEN_COOKIE_NAME'] ?? 'refresh_token';
+        $refreshToken = $_COOKIE[$refreshTokenName] ?? '';
 
         if (empty($refreshToken)) {
             $response->json([

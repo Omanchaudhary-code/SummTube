@@ -15,8 +15,10 @@ class AuthMiddleware extends Middleware
     public function handle(Request $request, Response $response, callable $next)
     {
         // Try to get token from cookie first (new method)
-        $token = $_COOKIE['access_token'] ?? null;
-        
+        // Try to get token from cookie first
+        $accessTokenName = $_ENV['ACCESS_TOKEN_COOKIE_NAME'] ?? 'access_token';
+        $token = $_COOKIE[$accessTokenName] ?? null;
+
         // Fallback to Authorization header for backward compatibility
         if (!$token) {
             $token = $request->bearerToken();
@@ -32,7 +34,7 @@ class AuthMiddleware extends Middleware
 
         try {
             $jwtService = new JWTService();
-            
+
             // Verify access token
             try {
                 $payload = $jwtService->verifyAccessToken($token);
@@ -46,7 +48,7 @@ class AuthMiddleware extends Middleware
                     ], 401);
                     return false;
                 }
-                
+
                 // Fallback to old verify method for backward compatibility
                 $payload = $jwtService->verify($token);
             }
@@ -87,7 +89,7 @@ class AuthMiddleware extends Middleware
         } catch (\Exception $e) {
             // Log error for debugging
             error_log('AuthMiddleware - Token verification failed: ' . $e->getMessage());
-            
+
             $response->json([
                 'error' => 'Invalid token',
                 'message' => 'Authentication failed. Please login again.'

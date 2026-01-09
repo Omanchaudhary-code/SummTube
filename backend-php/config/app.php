@@ -5,54 +5,54 @@ return [
     'env' => $_ENV['APP_ENV'] ?? 'development',
     'debug' => filter_var($_ENV['APP_DEBUG'] ?? true, FILTER_VALIDATE_BOOLEAN),
     'url' => $_ENV['APP_URL'] ?? 'http://localhost:8000',
-    
+
     // JWT Configuration
     'jwt' => [
         'secret' => $_ENV['JWT_SECRET'] ?? 'your-secret-key-change-in-production-please',
         'algorithm' => $_ENV['JWT_ALGORITHM'] ?? 'HS256',
         // Access token expiry: 15 minutes (900 seconds)
-        'access_expiry' => (int)($_ENV['JWT_ACCESS_EXPIRY'] ?? 900),
+        'access_expiry' => (int) ($_ENV['JWT_ACCESS_EXPIRY'] ?? 900),
         // Refresh token expiry: 7 days (604800 seconds)
-        'refresh_expiry' => (int)($_ENV['JWT_REFRESH_EXPIRY'] ?? 604800),
+        'refresh_expiry' => (int) ($_ENV['JWT_REFRESH_EXPIRY'] ?? 604800),
         // Legacy expiry (kept for backward compatibility)
-        'expiry' => (int)($_ENV['JWT_EXPIRY'] ?? 604800),
+        'expiry' => (int) ($_ENV['JWT_EXPIRY'] ?? 604800),
     ],
-    
+
     // Google OAuth Configuration
     'google' => [
         'client_id' => $_ENV['GOOGLE_CLIENT_ID'] ?? '',
         'client_secret' => $_ENV['GOOGLE_CLIENT_SECRET'] ?? '',
         'redirect_uri' => $_ENV['GOOGLE_REDIRECT_URI'] ?? 'http://localhost:3000/auth/callback',
     ],
-    
+
     // Guest Usage Limits
     'guest' => [
-        'summary_limit' => (int)($_ENV['GUEST_SUMMARY_LIMIT'] ?? 3),
-        'reset_hours' => (int)($_ENV['GUEST_RESET_HOURS'] ?? 24),
+        'summary_limit' => (int) ($_ENV['GUEST_SUMMARY_LIMIT'] ?? 3),
+        'reset_hours' => (int) ($_ENV['GUEST_RESET_HOURS'] ?? 24),
         'max_text_length' => 5000,
     ],
-    
+
     // Rate Limiting
     'rate_limit' => [
-        'requests' => (int)($_ENV['RATE_LIMIT_REQUESTS'] ?? 100),
-        'window' => (int)($_ENV['RATE_LIMIT_WINDOW'] ?? 3600),
+        'requests' => (int) ($_ENV['RATE_LIMIT_REQUESTS'] ?? 100),
+        'window' => (int) ($_ENV['RATE_LIMIT_WINDOW'] ?? 3600),
     ],
-    
+
     // AI Service
     'ai_service' => [
         'url' => $_ENV['AI_SERVICE_URL'] ?? 'http://localhost:8001/api/v1',
-        'timeout' => (int)($_ENV['AI_SERVICE_TIMEOUT'] ?? 60), // Increased timeout for AI
+        'timeout' => (int) ($_ENV['AI_SERVICE_TIMEOUT'] ?? 60), // Increased timeout for AI
     ],
-    
+
     // CORS Configuration
     'cors' => [
-        'allowed_origins' => explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? 'http://localhost:3000,http://localhost:5173,https://summtube.vercel.app'),
+        'allowed_origins' => explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? 'http://localhost:3000,http://localhost:5173,https://summarytube.vercel.app'),
         'allowed_methods' => explode(',', $_ENV['CORS_ALLOWED_METHODS'] ?? 'GET,POST,PUT,DELETE,OPTIONS,PATCH'),
         'allowed_headers' => explode(',', $_ENV['CORS_ALLOWED_HEADERS'] ?? 'Content-Type,Authorization,X-Requested-With,Accept,Origin'),
         'allow_credentials' => filter_var($_ENV['CORS_ALLOW_CREDENTIALS'] ?? 'true', FILTER_VALIDATE_BOOLEAN),
-        'max_age' => (int)($_ENV['CORS_MAX_AGE'] ?? 86400),
+        'max_age' => (int) ($_ENV['CORS_MAX_AGE'] ?? 86400),
     ],
-    
+
     // Cookie Configuration (ADD THIS for secure cookies)
     'cookie' => [
         'secure' => filter_var($_ENV['COOKIE_SECURE'] ?? false, FILTER_VALIDATE_BOOLEAN),
@@ -61,7 +61,7 @@ return [
         'domain' => $_ENV['COOKIE_DOMAIN'] ?? '',
         'access_token_name' => $_ENV['ACCESS_TOKEN_COOKIE_NAME'] ?? 'access_token',
         'refresh_token_name' => $_ENV['REFRESH_TOKEN_COOKIE_NAME'] ?? 'refresh_token',
-        'access_token_expiry' => (int)($_ENV['ACCESS_TOKEN_COOKIE_EXPIRY'] ?? 900), // 15 min
-        'refresh_token_expiry' => (int)($_ENV['REFRESH_TOKEN_COOKIE_EXPIRY'] ?? 604800), // 7 days
+        'access_token_expiry' => (int) ($_ENV['ACCESS_TOKEN_COOKIE_EXPIRY'] ?? 900), // 15 min
+        'refresh_token_expiry' => (int) ($_ENV['REFRESH_TOKEN_COOKIE_EXPIRY'] ?? 604800), // 7 days
     ],
 ];
