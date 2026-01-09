@@ -1,6 +1,8 @@
 import re
 import yt_dlp
 import logging
+import os
+import tempfile
 from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
@@ -20,10 +22,32 @@ class YouTubeService:
                 return match.group(1)
         return None
     
+    def _get_cookies_file(self) -> Optional[str]:
+        """
+        Create a temporary file containing YouTube cookies from environment variable.
+        Returns the path to the temporary file or None if env var is missing.
+        Caller is responsible for removing the file.
+        """
+        cookies_content = os.getenv("YOUTUBE_COOKIES")
+        if not cookies_content:
+            return None
+            
+        try:
+            # Create a named temp file that isn't deleted on close (so other libs can read it)
+            # We must delete it manually later
+            fd, path = tempfile.mkstemp(suffix=".txt", text=True)
+            with os.fdopen(fd, 'w') as f:
+                f.write(cookies_content)
+            return path
+        except Exception as e:
+            logger.error(f"Failed to create cookies file: {str(e)}")
+            return None
+
     async def get_video_data(self, video_url: str) -> Dict:
         """
         Fetch video metadata and transcript with multiple fallback mechanisms
         """
+        cookie_file = None
         try:
             video_id = self.extract_video_id(video_url)
             if not video_id:
@@ -31,6 +55,11 @@ class YouTubeService:
             
             logger.info(f"Processing video ID: {video_id}")
             
+            # Setup Cookies
+            cookie_file = self._get_cookies_file()
+            if cookie_file:
+                logger.info(f"Using provided YouTube cookies")
+
             transcript = None
             error_details = []
 
@@ -41,7 +70,8 @@ class YouTubeService:
                 
                 try:
                     # Get list of available transcripts
-                    transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+                    # Pass cookies if available
+                    transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, cookies=cookie_file)
                     
                     # Try to find best English transcript
                     try:
@@ -63,8 +93,8 @@ class YouTubeService:
                     logger.info("Transcript fetched successfully via YouTubeTranscriptApi")
                 except Exception as e:
                     logger.warning(f"YouTubeTranscriptApi (list_transcripts) failed: {str(e)}")
-                    # Fallback to direct get_transcript
-                    transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US', 'en-GB'])
+                    # Fallback to direct get_transcript (also pass cookies)
+                    transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US', 'en-GB'], cookies=cookie_file)
                     transcript = ' '.join([entry['text'] for entry in transcript_data])
                     logger.info("Transcript fetched successfully via direct get_transcript")
             except Exception as e:
@@ -89,6 +119,10 @@ class YouTubeService:
                     'nocheckcertificate': True,
                     'geo_bypass': True,
                 }
+                
+                # Add cookiefile if available
+                if cookie_file:
+                    ydl_opts['cookiefile'] = cookie_file
                 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
@@ -132,6 +166,13 @@ class YouTubeService:
         except Exception as e:
             logger.error(f"Error fetching video data: {str(e)}")
             raise ValueError(f"Failed to fetch video data: {str(e)}")
+        finally:
+            # Clean up cookie file
+            if cookie_file and os.path.exists(cookie_file):
+                try:
+                    os.unlink(cookie_file)
+                except Exception as e:
+                    logger.warning(f"Failed to remove temp cookie file: {e}")
     
     def _extract_text_from_subtitles(self, subtitle_tracks):
         """Extract text from subtitle tracks"""
