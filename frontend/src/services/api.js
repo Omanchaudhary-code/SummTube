@@ -21,12 +21,12 @@ api.interceptors.response.use(
       try {
         // Try to refresh the token
         await api.post("/auth/refresh");
-        
+
         // Retry the original request (cookies will be updated automatically)
         return api(originalRequest);
       } catch (refreshError) {
         // Refresh failed - redirect to login
-        window.location.href = "/login";
+        window.location.href = "/";
         return Promise.reject(refreshError);
       }
     }
