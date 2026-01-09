@@ -40,40 +40,62 @@ class YouTubeService:
                 'writeautomaticsub': True,
                 'subtitleslangs': ['en'],
                 'subtitlesformat': 'json3',
-                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'user_agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'http_headers': {
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
                     'Accept-Language': 'en-US,en;q=0.9',
                     'Sec-Fetch-Mode': 'navigate',
-                }
+                    'Sec-Fetch-Site': 'same-origin',
+                    'Sec-Fetch-Dest': 'document',
+                    'Referer': 'https://www.youtube.com/',
+                    'Cache-Control': 'max-age=0',
+                },
+                'nocheckcertificate': True,
+                'geo_bypass': True,
             }
             
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
-                
-                title = info.get('title', 'Unknown')
-                duration = info.get('duration', 0)
-                thumbnail = info.get('thumbnail', '')
-                
-                # Extract subtitles
-                subtitles = info.get('subtitles', {})
-                automatic_captions = info.get('automatic_captions', {})
-                
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+                    
+                    title = info.get('title', 'Unknown')
+                    duration = info.get('duration', 0)
+                    thumbnail = info.get('thumbnail', '')
+                    
+                    # Extract subtitles
+                    subtitles = info.get('subtitles', {})
+                    automatic_captions = info.get('automatic_captions', {})
+                    
+                    transcript = None
+                    
+                    # Try manual subtitles first
+                    if 'en' in subtitles:
+                        logger.info("Using manual English subtitles from yt-dlp")
+                        transcript = self._extract_text_from_subtitles(subtitles['en'])
+                    # Then try auto-generated
+                    elif 'en' in automatic_captions:
+                        logger.info("Using auto-generated English captions from yt-dlp")
+                        transcript = self._extract_text_from_subtitles(automatic_captions['en'])
+            except Exception as e:
+                logger.warning(f"yt-dlp failed to fetch video data, trying fallback: {str(e)}")
+                # Fallback to youtube-transcript-api for transcript and a basic title
+                title = "YouTube Video"
+                duration = 0
+                thumbnail = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
                 transcript = None
-                
-                # Try manual subtitles first
-                if 'en' in subtitles:
-                    logger.info("Using manual English subtitles")
-                    transcript = self._extract_text_from_subtitles(subtitles['en'])
-                # Then try auto-generated
-                elif 'en' in automatic_captions:
-                    logger.info("Using auto-generated English captions")
-                    transcript = self._extract_text_from_subtitles(automatic_captions['en'])
-                
-                if not transcript:
-                    raise ValueError(f"No English subtitles or captions available for video: {video_id}")
-                
-                logger.info(f"Transcript extracted: {len(transcript)} characters")
+
+            # Fallback to youtube-transcript-api if transcript is still missing
+            if not transcript:
+                try:
+                    from youtube_transcript_api import YouTubeTranscriptApi
+                    logger.info(f"Attempting fallback transcript extraction for: {video_id}")
+                    transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+                    transcript = ' '.join([t['text'] for t in transcript_list])
+                    logger.info("Fallback transcript extraction successful")
+                except Exception as fallback_err:
+                    logger.error(f"Fallback transcript extraction failed: {str(fallback_err)}")
+                    if 'transcript' not in locals() or not transcript:
+                        raise ValueError(f"Failed to fetch transcript (Bot detected or no captions). Error: {str(e)}")
             
             return {
                 "video_id": video_id,
