@@ -23,7 +23,7 @@ $router->get('/api/health', function($request, $response) {
 $router->post('/api/auth/register', [AuthController::class, 'register']);
 $router->post('/api/auth/login', [AuthController::class, 'login']);
 $router->post('/api/auth/google', [AuthController::class, 'googleAuth']);
-$router->get('/api/auth/google/config', [AuthController::class, 'getGoogleConfig']); // ✅ ADDED
+$router->get('/api/auth/google/config', [AuthController::class, 'getGoogleConfig']); 
 $router->post('/api/auth/refresh', [AuthController::class, 'refresh']);
 $router->post('/api/auth/logout', [AuthController::class, 'logout']);
 

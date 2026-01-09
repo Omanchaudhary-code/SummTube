@@ -2,7 +2,7 @@
 return [
     // Allowed origins - parsed from environment variable
     'allowed_origins' => array_filter(
-        array_map('trim', explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? 'http://localhost:5173,http://localhost:3000,http://localhost:8080,https://summtube.vercel.app'))
+        array_map('trim', explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? 'http://localhost:5173,http://localhost:3000,http://localhost:8080,https://summarytube.vercel.app'))
     ),
     
     // Allowed HTTP methods

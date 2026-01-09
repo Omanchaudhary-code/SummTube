@@ -15,9 +15,9 @@ class AIService:
         # Configure the API
         genai.configure(api_key=self.api_key)
         
-        # Use gemini-1.5-flash (correct model name)
+        # Use gemini-2.5-flash (confirmed by user)
         self.model = genai.GenerativeModel('gemini-2.5-flash')
-        logger.info("Gemini AI initialized successfully with gemini-1.5-flash")
+        logger.info("Gemini AI initialized successfully with gemini-2.5-flash")
     
     async def generate_summary(
         self, 

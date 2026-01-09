@@ -23,15 +23,15 @@ class AuthController
     {
         $secure = filter_var($_ENV['COOKIE_SECURE'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $domain = $_ENV['COOKIE_DOMAIN'] ?? '';
-        $samesite = $_ENV['COOKIE_SAMESITE'] ?? 'None'; // CHANGED: Lax -> None
+        $samesite = $_ENV['COOKIE_SAMESITE'] ?? 'None';
         $httponly = filter_var($_ENV['COOKIE_HTTPONLY'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        
+
         // Access token cookie (15 minutes)
         setcookie(
             $_ENV['ACCESS_TOKEN_COOKIE_NAME'] ?? 'access_token',
             $accessToken,
             [
-                'expires' => time() + (int)($_ENV['ACCESS_TOKEN_COOKIE_EXPIRY'] ?? 900),
+                'expires' => time() + (int) ($_ENV['ACCESS_TOKEN_COOKIE_EXPIRY'] ?? 900),
                 'path' => '/',
                 'domain' => $domain,
                 'secure' => $secure,
@@ -45,7 +45,7 @@ class AuthController
             $_ENV['REFRESH_TOKEN_COOKIE_NAME'] ?? 'refresh_token',
             $refreshToken,
             [
-                'expires' => time() + (int)($_ENV['REFRESH_TOKEN_COOKIE_EXPIRY'] ?? 604800),
+                'expires' => time() + (int) ($_ENV['REFRESH_TOKEN_COOKIE_EXPIRY'] ?? 604800),
                 'path' => '/',
                 'domain' => $domain,
                 'secure' => $secure,
@@ -62,7 +62,7 @@ class AuthController
     {
         $domain = $_ENV['COOKIE_DOMAIN'] ?? '';
         $samesite = $_ENV['COOKIE_SAMESITE'] ?? 'None'; // CHANGED: Lax -> None
-        
+
         setcookie(
             'access_token',
             '',
@@ -235,7 +235,7 @@ class AuthController
         } catch (\Exception $e) {
             // Clear cookies on refresh failure
             $this->clearTokenCookies($response);
-            
+
             $response->json([
                 'error' => 'Token refresh failed',
                 'message' => $e->getMessage()
@@ -250,7 +250,7 @@ class AuthController
     public function googleAuth(Request $request, Response $response): void
     {
         $data = $request->body();
-        
+
         // Support both 'token', 'idToken', and 'credential' field names
         $idToken = $data['token'] ?? $data['idToken'] ?? $data['credential'] ?? '';
 
@@ -264,7 +264,7 @@ class AuthController
 
         try {
             $googleService = new GoogleOAuthService();
-            
+
             // Check if Google OAuth is configured
             if (!$googleService->isConfigured()) {
                 $response->json([
@@ -273,7 +273,7 @@ class AuthController
                 ], 500);
                 return;
             }
-            
+
             // Verify token with Google
             $googleUserData = $googleService->verifyToken($idToken);
 
@@ -318,7 +318,7 @@ class AuthController
     {
         try {
             $googleService = new GoogleOAuthService();
-            
+
             // Check if Google OAuth is configured
             if (!$googleService->isConfigured()) {
                 $response->json([
@@ -327,16 +327,16 @@ class AuthController
                 ], 500);
                 return;
             }
-            
+
             // Get client configuration (only returns client_id, not secret)
             $config = $googleService->getClientConfig();
-            
+
             $response->json([
                 'success' => true,
                 'client_id' => $config['client_id'],
                 'redirect_uri' => $config['redirect_uri']
             ], 200);
-            
+
         } catch (\Exception $e) {
             error_log('Google config error: ' . $e->getMessage());
             $response->json([
