@@ -16,7 +16,7 @@ class AIService:
         genai.configure(api_key=self.api_key)
         
         # Use gemini-1.5-flash (Gemini 2.5 does not exist)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
         logger.info("Gemini AI initialized successfully with gemini-2.5-flash")
     
     async def generate_summary(
