@@ -15,8 +15,8 @@ class AIService:
         # Configure the API
         genai.configure(api_key=self.api_key)
         
-        # Use env var for model or default to gemini-1.5-flash
-        model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        # Use env var for model or default to gemini-2.5-flash
+        model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         self.model = genai.GenerativeModel(model_name)
         logger.info(f"Gemini AI initialized successfully with {model_name}")
     
