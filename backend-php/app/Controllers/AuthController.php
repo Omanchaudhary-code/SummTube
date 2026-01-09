@@ -34,6 +34,10 @@ class AuthController
 
         error_log("🍪 Setting Cookies - Domain: " . ($domain ?? 'null') . ", Secure: " . ($secure ? 'Y' : 'N') . ", SameSite: " . $samesite);
 
+        if (headers_sent($file, $line)) {
+            error_log("❌ Headers already sent in $file on line $line. Cannot set cookies!");
+        }
+
         // Access token cookie (15 minutes)
         setcookie(
             $_ENV['ACCESS_TOKEN_COOKIE_NAME'] ?? 'access_token',
