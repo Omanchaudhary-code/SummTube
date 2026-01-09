@@ -9,24 +9,21 @@ import toast from "react-hot-toast";
 const NavMenuBtn = ({ onLoginClick, onSignupClick, isMobile }) => {
   return (
     <div  // Changed from <li> to <div>
-      className={`flex ${
-        isMobile ? "flex-col w-full px-6 gap-3" : "gap-3"
-      }`}
+      className={`flex ${isMobile ? "flex-col w-full px-6 gap-3" : "gap-3"
+        }`}
     >
       <button
         onClick={onLoginClick}
-        className={`${
-          isMobile ? "w-full" : ""
-        } px-4 py-2 rounded border hover:bg-gray-100 transition`}
+        className={`${isMobile ? "w-full" : ""
+          } px-4 py-2 rounded border hover:bg-gray-100 transition`}
       >
         Login
       </button>
 
       <button
         onClick={onSignupClick}
-        className={`${
-          isMobile ? "w-full" : ""
-        } px-4 py-2 rounded bg-white text-black hover:opacity-90 transition`}
+        className={`${isMobile ? "w-full" : ""
+          } px-4 py-2 rounded bg-white text-black hover:opacity-90 transition`}
       >
         Sign up for free
       </button>
@@ -108,7 +105,7 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
           locale: "en",
         });
       } catch (error) {
-        setGoogleError("Failed to render Google button",error);
+        setGoogleError("Failed to render Google button", error);
       }
     }
   }, [googleReady]);
@@ -173,12 +170,12 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
     setIsLoading(true);
 
     try {
-      const result = await api.post("/auth/google", 
+      const result = await api.post("/auth/google",
         {
-        token: response.credential,
+          token: response.credential,
         },
         { withCredentials: true }
-    );
+      );
 
       if (result.data.success && result.data.user) {
         // Show success message
@@ -396,7 +393,7 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
 const SignupModal = ({
   onClose,
   onSwitchToLogin,
-  variant = "default" 
+  variant = "default"
 }) => {
   const [form, setForm] = useState({
     name: "",
@@ -408,7 +405,7 @@ const SignupModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const isTryBoard = variant === "tryboard"; 
+  const isTryBoard = variant === "tryboard";
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -553,7 +550,7 @@ const TryBoard = () => {
   const fetchGuestStatus = async () => {
     try {
       const response = await api.get("/guest/status");
-      
+
       if (response.data.success) {
         setTriesLeft(response.data.status.triesLeft);
       }
@@ -598,11 +595,10 @@ const TryBoard = () => {
       }
     } catch (error) {
       console.error("Error submitting link:", error);
-      const errorMsg = error.response?.data?.error || 
-                       error.response?.data?.message || 
-                       "Network error. Please check your connection.";
-      setError(errorMsg);
-      alert(errorMsg);
+      const errorTitle = error.response?.data?.error || "Error generating summary";
+      const errorDetail = error.response?.data?.message || "Please check your internet connection and try again.";
+      setError(errorTitle);
+      alert(`${errorTitle}\n\n${errorDetail}`);
     } finally {
       setIsLoading(false);
     }
@@ -613,9 +609,8 @@ const TryBoard = () => {
       <div className="wrapper h-screen w-screen flex text-white overflow-hidden">
         {/* LEFT SIDEBAR */}
         <div
-          className={`left-section h-full bg-[#202124] flex-shrink-0 transition-all duration-300 ease-in-out ${
-            isSidebarOpen ? "w-64" : "w-0 md:w-16"
-          } overflow-hidden`}
+          className={`left-section h-full bg-[#202124] flex-shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-64" : "w-0 md:w-16"
+            } overflow-hidden`}
         >
           <div className={`h-full ${isSidebarOpen ? "p-5" : "p-2 md:p-3"}`}>
             {/* Logo and Toggle Section */}

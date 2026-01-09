@@ -39,20 +39,20 @@ class AIService
 
             // Build full endpoint URL
             $url = $this->aiServiceUrl . '/summarize';
-            
+
             error_log("🔍 AI Service Request URL: $url");
             error_log("🔍 Video URL: $videoUrl");
             error_log("🔍 Summary Type: $summaryType");
-            
+
             // Initialize cURL
             $ch = curl_init($url);
-            
+
             // Prepare JSON payload with summary_type
             $payload = json_encode([
                 'video_url' => $videoUrl,
                 'summary_type' => $summaryType
             ]);
-            
+
             // Configure cURL options
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
@@ -74,7 +74,7 @@ class AIService
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
             $curlErrno = curl_errno($ch);
-            
+
             curl_close($ch);
 
             // Log response details for debugging
@@ -91,8 +91,8 @@ class AIService
 
             // Check HTTP status code
             if ($httpCode !== 200) {
-                $errorMsg = "AI Service returned HTTP $httpCode";
-                
+                $errorMsg = "AI Service (HTTP $httpCode)";
+
                 // Try to parse error response
                 if ($response) {
                     $errorData = json_decode($response, true);
@@ -101,8 +101,10 @@ class AIService
                     } elseif ($errorData && isset($errorData['message'])) {
                         $errorMsg .= ": " . $errorData['message'];
                     } else {
-                        $errorMsg .= ". Response: " . substr($response, 0, 200);
+                        $errorMsg .= " - Raw: " . substr($response, 0, 100);
                     }
+                } else {
+                    $errorMsg .= " - No response body";
                 }
                 throw new \Exception($errorMsg);
             }
@@ -141,22 +143,22 @@ class AIService
             //   "summary_length": 500,
             //   "summary_type": "detailed"
             // }
-            
+
             return [
                 // Core summary data
                 'summary' => $result['summary'],
-                
+
                 // Video metadata - handle both old and new field names
                 'video_id' => $result['video_id'] ?? null,
                 'title' => $result['video_title'] ?? $result['title'] ?? 'Unknown Title',
                 'thumbnail' => $result['thumbnail'] ?? null,
                 'duration' => $result['duration'] ?? 0,
-                
+
                 // Summary metadata
                 'summary_type' => $result['summary_type'] ?? $summaryType,
                 'transcript_length' => $result['original_length'] ?? $result['transcript_length'] ?? 0,
                 'processing_time' => $result['processing_time'] ?? 0,
-                
+
                 // Optional: include raw response for debugging
                 // 'raw_response' => $result
             ];
@@ -177,25 +179,25 @@ class AIService
         try {
             // Try to connect to health endpoint
             $healthUrl = $this->aiServiceUrl . '/health';
-            
+
             error_log("🔍 Testing AI Service connection: $healthUrl");
-            
+
             $ch = curl_init($healthUrl);
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 5,
                 CURLOPT_CONNECTTIMEOUT => 3
             ]);
-            
+
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
             curl_close($ch);
-            
+
             $isConnected = $httpCode === 200;
-            
+
             error_log($isConnected ? "✅ AI Service is reachable" : "❌ AI Service connection failed");
-            
+
             return [
                 'connected' => $isConnected,
                 'status_code' => $httpCode,
@@ -203,7 +205,7 @@ class AIService
                 'response' => $response ? json_decode($response, true) : null,
                 'error' => $curlError ?: null
             ];
-            
+
         } catch (\Exception $e) {
             error_log("❌ AI Service connection test failed: " . $e->getMessage());
             return [

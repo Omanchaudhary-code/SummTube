@@ -23,8 +23,16 @@ class AuthController
     {
         $secure = filter_var($_ENV['COOKIE_SECURE'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $domain = $_ENV['COOKIE_DOMAIN'] ?? '';
+
+        // If domain is empty string or "localhost", it's better to leave it null for subdomains/cross-site unless explicit
+        if ($domain === '' || $domain === 'localhost') {
+            $domain = null;
+        }
+
         $samesite = $_ENV['COOKIE_SAMESITE'] ?? 'None';
         $httponly = filter_var($_ENV['COOKIE_HTTPONLY'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+        error_log("🍪 Setting Cookies - Domain: " . ($domain ?? 'null') . ", Secure: " . ($secure ? 'Y' : 'N') . ", SameSite: " . $samesite);
 
         // Access token cookie (15 minutes)
         setcookie(
@@ -403,5 +411,22 @@ class AuthController
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Debug endpoint to see what cookies are received
+     */
+    public function debugCookies(Request $request, Response $response): void
+    {
+        $response->json([
+            'cookies_received' => $_COOKIE,
+            'env_config' => [
+                'COOKIE_DOMAIN' => $_ENV['COOKIE_DOMAIN'] ?? 'not set',
+                'COOKIE_SAMESITE' => $_ENV['COOKIE_SAMESITE'] ?? 'not set',
+                'COOKIE_SECURE' => $_ENV['COOKIE_SECURE'] ?? 'not set',
+                'ACCESS_TOKEN_NAME' => $_ENV['ACCESS_TOKEN_COOKIE_NAME'] ?? 'access_token'
+            ],
+            'request_headers' => $request->headers()
+        ]);
     }
 }

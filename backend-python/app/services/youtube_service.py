@@ -31,7 +31,7 @@ class YouTubeService:
             
             logger.info(f"Fetching data for video ID: {video_id}")
             
-            # Use yt-dlp to get video metadata AND subtitles
+            # Use yt-dlp with improved headers to mitigate bot detection
             ydl_opts = {
                 'quiet': True,
                 'no_warnings': True,
@@ -40,6 +40,12 @@ class YouTubeService:
                 'writeautomaticsub': True,
                 'subtitleslangs': ['en'],
                 'subtitlesformat': 'json3',
+                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'http_headers': {
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Sec-Fetch-Mode': 'navigate',
+                }
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:

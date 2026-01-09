@@ -48,9 +48,9 @@ class SummaryController
                 $request->ip(),
                 $request->userAgent()
             );
-            
+
             $status = $this->guestService->checkLimit($identifier);
-            
+
             if ($status['triesLeft'] <= 0) {
                 $response->json([
                     'error' => 'Guest limit reached',
@@ -86,17 +86,17 @@ class SummaryController
                     'maxTries' => $status['maxTries'],
                     'resetsAt' => $status['resetsAt']
                 ],
-                'message' => $status['triesLeft'] === 0 
+                'message' => $status['triesLeft'] === 0
                     ? 'You have used all free summaries. Please login for unlimited access.'
-                    : ($status['triesLeft'] === 1 
+                    : ($status['triesLeft'] === 1
                         ? 'This is your last free summary! Login for unlimited access.'
                         : null)
             ], 200);
 
         } catch (\Exception $e) {
             $response->json([
-                'error' => 'Failed to generate summary',
-                'message' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'message' => 'Try checking if the AI service URL is correct in your environment settings.'
             ], 500);
         }
     }

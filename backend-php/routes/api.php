@@ -11,21 +11,37 @@ use App\Middleware\GuestLimitMiddleware;
 // ==========================================
 
 // Health check
-$router->get('/api/health', function($request, $response) {
-    $response->json([
-        'status' => 'ok',
-        'message' => 'API is running',
-        'timestamp' => date('Y-m-d H:i:s')
-    ]);
+$router->get('/api/health', function ($request, $response) {
+    try {
+        $aiService = new \App\Services\AIService();
+        $aiHealth = $aiService->testConnection();
+
+        $response->json([
+            'status' => 'ok',
+            'message' => 'API is running',
+            'ai_service' => [
+                'status' => $aiHealth['connected'] ? 'connected' : 'unreachable',
+                'details' => $aiHealth
+            ],
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+    } catch (\Exception $e) {
+        $response->json([
+            'status' => 'error',
+            'message' => 'API health check failed',
+            'error' => $e->getMessage()
+        ], 500);
+    }
 });
 
 // Authentication Routes
 $router->post('/api/auth/register', [AuthController::class, 'register']);
 $router->post('/api/auth/login', [AuthController::class, 'login']);
 $router->post('/api/auth/google', [AuthController::class, 'googleAuth']);
-$router->get('/api/auth/google/config', [AuthController::class, 'getGoogleConfig']); 
+$router->get('/api/auth/google/config', [AuthController::class, 'getGoogleConfig']);
 $router->post('/api/auth/refresh', [AuthController::class, 'refresh']);
 $router->post('/api/auth/logout', [AuthController::class, 'logout']);
+$router->get('/api/auth/debug-cookies', [AuthController::class, 'debugCookies']);
 
 // Guest Summary Routes (with rate limiting)
 $router->post(
@@ -90,9 +106,9 @@ $router->post(
 // ==========================================
 
 if ($_ENV['APP_ENV'] === 'development' || ($_ENV['APP_DEBUG'] ?? false)) {
-    
+
     // Debug: Check headers
-    $router->get('/api/debug/headers', function($request, $response) {
+    $router->get('/api/debug/headers', function ($request, $response) {
         $response->json([
             'all_headers' => $request->headers(),
             'authorization' => $request->header('Authorization'),
@@ -100,25 +116,25 @@ if ($_ENV['APP_ENV'] === 'development' || ($_ENV['APP_DEBUG'] ?? false)) {
             'token_length' => $request->bearerToken() ? strlen($request->bearerToken()) : 0
         ]);
     });
-    
+
     // Debug: Test protected route
-    $router->get('/api/debug/auth-test', function($request, $response) {
+    $router->get('/api/debug/auth-test', function ($request, $response) {
         $response->json([
             'message' => 'This is a public debug route',
             'has_token' => $request->bearerToken() !== null
         ]);
     });
-    
+
     // Debug: Decode token (without verification)
-    $router->post('/api/debug/decode-token', function($request, $response) {
+    $router->post('/api/debug/decode-token', function ($request, $response) {
         $data = $request->body();
         $token = $data['token'] ?? '';
-        
+
         if (empty($token)) {
             $response->json(['error' => 'Token required'], 400);
             return;
         }
-        
+
         try {
             $jwtService = new \App\Services\JWTService();
             $decoded = $jwtService->decode($token);
@@ -132,21 +148,21 @@ if ($_ENV['APP_ENV'] === 'development' || ($_ENV['APP_DEBUG'] ?? false)) {
             $response->json(['error' => $e->getMessage()], 400);
         }
     });
-    
+
     // Debug: Reset guest limit
-    $router->post('/api/debug/reset-guest', function($request, $response) {
+    $router->post('/api/debug/reset-guest', function ($request, $response) {
         $guestService = new \App\Services\GuestService();
         $identifier = $guestService->generateIdentifier(
             $request->ip(),
             $request->userAgent()
         );
-        
+
         // Reset guest usage
         $db = \Core\Database::getInstance();
         $sql = "UPDATE guest_usage SET summaries_count = 0, reset_at = NOW() + INTERVAL '24 hours' WHERE identifier = :identifier";
         $stmt = $db->prepare($sql);
         $stmt->execute([':identifier' => $identifier]);
-        
+
         $response->json([
             'success' => true,
             'message' => 'Guest limit reset',
@@ -159,7 +175,7 @@ if ($_ENV['APP_ENV'] === 'development' || ($_ENV['APP_DEBUG'] ?? false)) {
 // 404 Handler (Must be last)
 // ==========================================
 
-$router->setNotFoundHandler(function($request, $response) {
+$router->setNotFoundHandler(function ($request, $response) {
     $response->json([
         'error' => 'Route not found',
         'path' => $request->uri(),
