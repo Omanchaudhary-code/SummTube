@@ -167,7 +167,8 @@ class AIService
 
         } catch (\Exception $e) {
             error_log('❌ AI Service Error: ' . $e->getMessage());
-            throw new \Exception('Failed to generate summary: ' . $e->getMessage());
+            // Pass the original exception code to preserve HTTP status (e.g., 400 for bad request)
+            throw new \Exception('Failed to generate summary: ' . $e->getMessage(), $e->getCode());
         }
     }
 
