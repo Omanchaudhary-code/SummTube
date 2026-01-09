@@ -35,6 +35,7 @@ const NavMenuBtn = ({ onLoginClick, onSignupClick, isMobile }) => {
 };
 
 
+
 const LoginModal = ({ onClose, onSwitchToSignup }) => {
   const navigate = useNavigate();
   const googleButtonRef = useRef(null);
@@ -172,9 +173,12 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
     setIsLoading(true);
 
     try {
-      const result = await api.post("/auth/google", {
+      const result = await api.post("/auth/google", 
+        {
         token: response.credential,
-      });
+        },
+        { withCredentials: true }
+    );
 
       if (result.data.success && result.data.user) {
         // Show success message
@@ -237,7 +241,6 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
       setIsLoading(false);
     }
   };
-
   /* ---------------- UI ---------------- */
   return (
     <div

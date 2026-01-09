@@ -8,7 +8,7 @@ import api from "../services/api";
 const SignupModal = ({
   onClose,
   onSwitchToLogin,
-  variant = "default" // ✅ ADDED
+  variant = "default" 
 }) => {
   const [form, setForm] = useState({
     name: "",
@@ -20,7 +20,7 @@ const SignupModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const isTryBoard = variant === "tryboard"; // ✅ ADDED
+  const isTryBoard = variant === "tryboard"; 
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
