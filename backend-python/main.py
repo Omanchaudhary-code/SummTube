@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes.summary import router as summary_router
 from app.utils.logger import setup_logging
 from app.middleware.request_id import RequestIDMiddleware
+from dotenv import load_dotenv
 import uvicorn
 import os
 
