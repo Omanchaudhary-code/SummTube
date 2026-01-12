@@ -2,10 +2,6 @@
 
 namespace Core;
 
-/**
- * HTTP Response Wrapper
- * Like res object in Express.js
- */
 class Response
 {
     private int $statusCode = 200;
@@ -26,18 +22,13 @@ class Response
         if ($this->sent) {
             return;
         }
-
         $this->statusCode = $statusCode;
         $this->header('Content-Type', 'application/json');
-
         http_response_code($this->statusCode);
-
         foreach ($this->headers as $name => $value) {
             header("$name: $value");
         }
-
         $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
         if ($json === false) {
             error_log("❌ JSON encode failed: " . json_last_error_msg());
             $json = json_encode([
@@ -45,9 +36,25 @@ class Response
                 'message' => 'Failed to encode response: ' . json_last_error_msg()
             ]);
         }
-
         echo $json;
+        $this->sent = true;
+    }
 
+    /**
+     * Send empty response (headers only, no body)
+     * Useful for HEAD requests
+     */
+    public function empty(int $statusCode = 200): void
+    {
+        if ($this->sent) {
+            return;
+        }
+        $this->statusCode = $statusCode;
+        http_response_code($this->statusCode);
+        foreach ($this->headers as $name => $value) {
+            header("$name: $value");
+        }
+        // No body for HEAD
         $this->sent = true;
     }
 

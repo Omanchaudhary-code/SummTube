@@ -1,9 +1,9 @@
+# Module: main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.summary import router as summary_router
 from app.utils.logger import setup_logging
 from app.middleware.request_id import RequestIDMiddleware
-from dotenv import load_dotenv  # ADD THIS
 import uvicorn
 import os
 
@@ -58,6 +58,12 @@ async def root():
         }
     }
 
+# Explicit HEAD handlers (no body)
+from fastapi import Response
+@app.head("/")
+async def root_head():
+    return Response(status_code=200)
+
 @app.get("/api/v1/health")
 async def health_check():
     return {
@@ -65,6 +71,10 @@ async def health_check():
         "service": "SummTube AI Service",
         "api_key_loaded": bool(os.getenv("GOOGLE_API_KEY"))  # Check if key is loaded
     }
+
+@app.head("/api/v1/health")
+async def health_head():
+    return Response(status_code=200)
 
 # Include routers
 app.include_router(summary_router, prefix="/api/v1", tags=["summarization"])

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ListCollapse, Send, Menu, Download, Copy, Check, LogOut, User } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ListCollapse, Send, Menu, Download, Copy, Check, LogOut, User, Square } from "lucide-react";
 import api from "../services/api.js";
 
 const Dashboard = () => {
@@ -14,6 +14,7 @@ const Dashboard = () => {
   const [history, setHistory] = useState([]);
   const [user, setUser] = useState(null);
   const [notification, setNotification] = useState(null);
+  const abortControllerRef = useRef(null);
 
   // Show notification helper
   const showNotification = (message, type = "success") => {
@@ -81,10 +82,16 @@ const Dashboard = () => {
     setIsGenerating(false);
 
     try {
-      const response = await api.post("/summary", {
-        video_url: link,
-        summary_type: "detailed"
-      });
+      // Create an AbortController and attach it to the request
+      abortControllerRef.current = new AbortController();
+      const response = await api.post(
+        "/summary",
+        {
+          video_url: link,
+          summary_type: "detailed",
+        },
+        { signal: abortControllerRef.current.signal }
+      );
 
       if (response.data.success) {
         setSummary(response.data);
@@ -96,12 +103,41 @@ const Dashboard = () => {
         throw new Error(response.data.error || response.data.message || "Failed to generate summary");
       }
     } catch (error) {
-      console.error("Error submitting link:", error);
-      const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || "Failed to generate summary. Please try again.";
-      setError(errorMsg);
-      showNotification(errorMsg, "error");
+      // Detect abortion from axios (ERR_CANCELED) or generic abort
+      const aborted = error.code === "ERR_CANCELED" || error.name === "CanceledError";
+      if (aborted) {
+        setError("Generation stopped by user.");
+        showNotification("Generation stopped.", "error");
+      } else {
+        console.error("Error submitting link:", error);
+        const errorMsg =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to generate summary. Please try again.";
+        setError(errorMsg);
+        showNotification(errorMsg, "error");
+      }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const stopGeneration = () => {
+    // If a request is in-flight, abort it
+    if (isLoading && abortControllerRef.current) {
+      try {
+        abortControllerRef.current.abort();
+      } catch (e) {
+        // no-op if already aborted
+      }
+      setIsLoading(false);
+    }
+    // If we're typing out the summary, stop the animation
+    if (isGenerating) {
+      setIsGenerating(false);
+      showNotification("Stopped streaming.", "error");
     }
   };
 
@@ -312,17 +348,23 @@ const Dashboard = () => {
                       className="flex-1 px-3 py-3 bg-transparent text-white outline-none text-base placeholder-gray-500"
                       disabled={isLoading}
                     />
-                    <button
-                      onClick={handleSubmit}
-                      disabled={isLoading}
-                      className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-3 rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isLoading ? (
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
+                    {!isLoading ? (
+                      <button
+                        onClick={handleSubmit}
+                        disabled={isLoading}
+                        className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-3 rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
                         <Send size={20} />
-                      )}
-                    </button>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={stopGeneration}
+                        className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg transition-all"
+                        title="Stop generation"
+                      >
+                        <Square size={20} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -345,6 +387,14 @@ const Dashboard = () => {
                       <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
                       <p className="text-gray-300 text-lg">Generating summary...</p>
                       <p className="text-gray-500 text-sm">This may take a few moments</p>
+                      <button
+                        onClick={stopGeneration}
+                        className="mt-3 inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all"
+                        title="Stop generation"
+                      >
+                        <Square size={18} />
+                        <span className="text-sm">Stop</span>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -404,6 +454,18 @@ const Dashboard = () => {
                           <span className="inline-block w-2 h-5 bg-cyan-400 ml-1 animate-pulse" />
                         )}
                       </p>
+                      {isGenerating && (
+                        <div className="mt-3">
+                          <button
+                            onClick={stopGeneration}
+                            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md transition-all"
+                            title="Stop streaming"
+                          >
+                            <Square size={16} />
+                            <span className="text-sm">Stop</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Footer Info */}
@@ -438,17 +500,22 @@ const Dashboard = () => {
                     className="flex-1 px-3 py-2 md:py-3 bg-transparent text-white outline-none text-sm md:text-base placeholder-gray-500"
                     disabled={isLoading}
                   />
-                  <button
-                    onClick={handleSubmit}
-                    disabled={isLoading}
-                    className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-2 md:p-3 rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
+                  {!isLoading && !isGenerating ? (
+                    <button
+                      onClick={handleSubmit}
+                      className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-2 md:p-3 rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all"
+                    >
                       <Send size={20} />
-                    )}
-                  </button>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={stopGeneration}
+                      className="bg-red-600 hover:bg-red-700 text-white p-2 md:p-3 rounded-lg transition-all"
+                      title="Stop generation"
+                    >
+                      <Square size={20} />
+                    </button>
+                  )}
                 </div>
               </div>
               <p className="text-xs md:text-sm text-gray-500 mt-2 text-center">

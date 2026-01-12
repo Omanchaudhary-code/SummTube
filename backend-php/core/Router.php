@@ -2,10 +2,6 @@
 
 namespace Core;
 
-/**
- * Router Class
- * Like Express Router
- */
 class Router
 {
     private array $routes = [];
@@ -14,16 +10,18 @@ class Router
 
     /**
      * Add GET route
-     * Like app.get() in Express
-     * 
-     * @param string $path
-     * @param array|callable $handler
-     * @param array $middleware
-     * @return void
      */
     public function get(string $path, $handler, array $middleware = []): void
     {
         $this->addRoute('GET', $path, $handler, $middleware);
+    }
+
+    /**
+     * Add HEAD route
+     */
+    public function head(string $path, $handler, array $middleware = []): void
+    {
+        $this->addRoute('HEAD', $path, $handler, $middleware);
     }
 
     /**
