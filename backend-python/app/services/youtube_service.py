@@ -25,18 +25,45 @@ class YouTubeService:
     def _get_cookies_file(self) -> Optional[str]:
         """
         Create a temporary file containing YouTube cookies from environment variable.
+        Supports raw multi-line (YOUTUBE_COOKIES) or base64-encoded (YOUTUBE_COOKIES_B64).
         Returns the path to the temporary file or None if env var is missing.
         Caller is responsible for removing the file.
         """
-        cookies_content = os.getenv("YOUTUBE_COOKIES")
+        import base64
+
+        # Prefer base64 if available
+        cookies_b64 = os.getenv("YOUTUBE_COOKIES_B64")
+        cookies_content = None
+
+        if cookies_b64:
+            try:
+                cookies_content = base64.b64decode(cookies_b64).decode("utf-8", errors="replace")
+                logger.info("Loaded YouTube cookies from YOUTUBE_COOKIES_B64")
+            except Exception as e:
+                logger.error(f"Failed to decode YOUTUBE_COOKIES_B64: {e}")
+                cookies_content = None
+
+        # Fallback to raw multi-line env var
         if not cookies_content:
+            raw = os.getenv("YOUTUBE_COOKIES")
+            if raw:
+                # Strip wrapping quotes if present (some dashboards wrap multi-line values)
+                if (raw.startswith('"') and raw.endswith('"')) or (raw.startswith("'") and raw.endswith("'")):
+                    raw = raw[1:-1]
+                cookies_content = raw
+                logger.info("Loaded YouTube cookies from YOUTUBE_COOKIES")
+
+        if not cookies_content:
+            logger.info("No YouTube cookies provided via env; proceeding without cookies")
             return None
-            
+
         try:
             # Create a named temp file that isn't deleted on close (so other libs can read it)
-            # We must delete it manually later
             fd, path = tempfile.mkstemp(suffix=".txt", text=True)
             with os.fdopen(fd, 'w') as f:
+                # Ensure trailing newline (some parsers expect POSIX-style file end)
+                if not cookies_content.endswith("\n"):
+                    cookies_content += "\n"
                 f.write(cookies_content)
             return path
         except Exception as e:
