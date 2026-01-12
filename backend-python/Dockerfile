@@ -1,61 +1,60 @@
+# =========================
 # Build stage
+# =========================
 FROM python:3.11-slim AS builder
 
-# Set work directory
 WORKDIR /app
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Install build dependencies
+# Build dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies to a local directory
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --user --no-cache-dir -r requirements.txt
 
-# Final stage
+# =========================
+# Runtime stage
+# =========================
 FROM python:3.11-slim
 
-# Set work directory
 WORKDIR /app
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/root/.local/bin:$PATH"
+    PATH="/home/appuser/.local/bin:$PATH"
 
-# Install runtime dependencies
+# Runtime dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user and set permissions
-RUN useradd -m appuser && \
-    chown -R appuser:appuser /app
+# Create non-root user
+RUN useradd -m appuser
 USER appuser
 
-# Copy installed packages from builder
-COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
-ENV PATH="/home/appuser/.local/bin:$PATH"
+# Copy dependencies
+COPY --from=builder /root/.local /home/appuser/.local
 
 # Copy application code
 COPY --chown=appuser:appuser . .
 
-# Expose port
-EXPOSE 8001
+# =========================
+# Render dynamic PORT support
+# =========================
+EXPOSE ${PORT}
 
-# Add healthcheck
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8001/api/v1/health || exit 1
+# Healthcheck (Render-safe)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/api/v1/health || exit 1
 
-# Run the application with production settings
-# Workers count can be overridden with WORKERS env var (default: 2)
-# For CPU-bound tasks, use: workers = (2 * CPU cores) + 1
-# For I/O-bound tasks (like this API), use: workers = (4 * CPU cores)
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8001 --workers ${WORKERS:-2} --no-access-log --log-level info"]
+# =========================
+# Start app (production)
+# =========================
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT} --workers ${WORKERS:-2} --no-access-log --log-level info"]
