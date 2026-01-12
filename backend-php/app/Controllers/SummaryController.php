@@ -3,7 +3,6 @@ namespace App\Controllers;
 
 use Core\Request;
 use Core\Response;
-use Core\Validator;
 use App\Services\AIService;
 use App\Services\GuestService;
 use App\Models\Summary;
@@ -125,11 +124,11 @@ class SummaryController
         }
 
         try {
-            error_log("🚀 Starting summary generation for User ID: $userId");
+            error_log(" Starting summary generation for User ID: $userId");
 
             // Generate summary via AI service
             $result = $this->aiService->generateSummary($videoUrl, $summaryType);
-            error_log("✅ AI Service summary generated");
+            error_log("✅AI Service summary generated");
 
             // Save to database
             try {
@@ -146,18 +145,18 @@ class SummaryController
                     'transcript_length' => $result['transcript_length'] ?? 0,
                     'processing_time' => $result['processing_time'] ?? 0
                 ]);
-                error_log("✅ Database record created: ID $summaryId");
+                error_log("✅Database record created: ID $summaryId");
             } catch (\Exception $dbError) {
-                error_log("❌ Database save failed: " . $dbError->getMessage());
+                error_log("Database save failed: " . $dbError->getMessage());
                 throw new \Exception("Failed to save summary to history: " . $dbError->getMessage());
             }
 
             // Update usage stats
             try {
                 $this->usageModel->incrementSummaries($userId);
-                error_log("✅ Usage incremented");
+                error_log("Usage incremented");
             } catch (\Exception $usageError) {
-                error_log("⚠️ Usage increment failed (non-critical): " . $usageError->getMessage());
+                error_log("Usage increment failed (non-critical): " . $usageError->getMessage());
                 // Don't fail the whole request for usage tracking
             }
 
@@ -177,7 +176,7 @@ class SummaryController
             ], 201);
 
         } catch (\Exception $e) {
-            error_log("🔥 Summary Creation Error: " . $e->getMessage());
+            error_log("Summary Creation Error: " . $e->getMessage());
 
             // Use the exception code if it's a valid HTTP error code (4xx or 5xx)
             $code = $e->getCode();

@@ -49,7 +49,8 @@ if ($connection === 'pgsql') {
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
-            PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
+            // SSL verification: Enable in production if using SSL
+            PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => filter_var($_ENV['DB_SSL_VERIFY'] ?? 'false', FILTER_VALIDATE_BOOLEAN),
             PDO::ATTR_TIMEOUT => 30,
             PDO::ATTR_PERSISTENT => false,
         ]

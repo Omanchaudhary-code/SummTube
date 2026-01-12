@@ -45,8 +45,11 @@ return [
     ],
 
     // CORS Configuration
+    // Default: empty array - MUST be set via environment variable in production
     'cors' => [
-        'allowed_origins' => explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? 'http://localhost:3000,http://localhost:5173,https://summarytube.vercel.app'),
+        'allowed_origins' => !empty($_ENV['CORS_ALLOWED_ORIGINS']) 
+            ? explode(',', $_ENV['CORS_ALLOWED_ORIGINS']) 
+            : (($_ENV['APP_ENV'] ?? 'development') === 'production' ? [] : ['http://localhost:3000', 'http://localhost:5173']),
         'allowed_methods' => explode(',', $_ENV['CORS_ALLOWED_METHODS'] ?? 'GET,POST,PUT,DELETE,OPTIONS,PATCH'),
         'allowed_headers' => explode(',', $_ENV['CORS_ALLOWED_HEADERS'] ?? 'Content-Type,Authorization,X-Requested-With,Accept,Origin'),
         'allow_credentials' => filter_var($_ENV['CORS_ALLOW_CREDENTIALS'] ?? 'true', FILTER_VALIDATE_BOOLEAN),

@@ -40,9 +40,9 @@ class AIService
             // Build full endpoint URL
             $url = $this->aiServiceUrl . '/summarize';
 
-            error_log("🔍 AI Service Request URL: $url");
-            error_log("🔍 Video URL: $videoUrl");
-            error_log("🔍 Summary Type: $summaryType");
+            error_log("AI Service Request URL: $url");
+            error_log("Video URL: $videoUrl");
+            error_log("Summary Type: $summaryType");
 
             // Prepare JSON payload with summary_type
             $payload = json_encode([
@@ -93,17 +93,28 @@ class AIService
                 }
 
                 if ($attempt < $maxRetries) {
-                    error_log("⚠️ AI Service attempt $attempt failed ($httpCode). Retrying...");
+                    error_log("⚠️AI Service attempt $attempt failed ($httpCode). Retrying...");
                     sleep($attempt); // Simple backoff: 1s, 2s, 3s
                 }
             }
 
             // Log response details for debugging
-            error_log("📡 AI Service Response Code: $httpCode");
-            if ($curlError) {
-                error_log("❌ cURL Error ($curlErrno): $curlError");
+            // Log response details (sanitized)
+            $config = require __DIR__ . '/../../config/app.php';
+            $isDebug = $config['debug'] && ($config['env'] ?? 'development') !== 'production';
+            
+            if ($isDebug) {
+                error_log("📡 AI Service Response Code: $httpCode");
+                if ($curlError) {
+                    error_log("cURL Error ($curlErrno): $curlError");
+                }
+                error_log("📦 AI Response (first 500 chars): " . substr($response, 0, 500));
+            } else {
+                // Production: Minimal logging
+                if ($httpCode !== 200) {
+                    error_log("AI Service error: HTTP $httpCode");
+                }
             }
-            error_log("📦 AI Response (first 500 chars): " . substr($response, 0, 500));
 
             // Check for network/connection errors
             if ($curlErrno !== 0) {
@@ -130,8 +141,6 @@ class AIService
                 throw new \Exception($errorMsg, $httpCode);
             }
 
-            error_log("📦 AI Response Raw: " . $response);
-
             // Decode JSON response
             $result = json_decode($response, true);
 
@@ -147,25 +156,13 @@ class AIService
 
             // Check for required 'summary' field
             if (!isset($result['summary'])) {
-                error_log("❌ Response structure: " . print_r($result, true));
+                $config = require __DIR__ . '/../../config/app.php';
+                $isDebug = $config['debug'] && ($config['env'] ?? 'development') !== 'production';
+                if ($isDebug) {
+                    error_log("Response structure: " . print_r($result, true));
+                }
                 throw new \Exception('Response missing summary field');
             }
-
-            error_log("✅ Summary generated successfully");
-
-            // Map Python backend response to consistent format
-            // Python backend returns:
-            // {
-            //   "summary": "...",
-            //   "video_url": "...",
-            //   "video_id": "...",
-            //   "video_title": "..." (UPDATED field name),
-            //   "thumbnail": "...",
-            //   "duration": 123,
-            //   "original_length": 5000 (transcript length),
-            //   "summary_length": 500,
-            //   "summary_type": "detailed"
-            // }
 
             return [
                 // Core summary data
@@ -187,7 +184,7 @@ class AIService
             ];
 
         } catch (\Exception $e) {
-            error_log('❌ AI Service Error: ' . $e->getMessage());
+            error_log(' AI Service Error: ' . $e->getMessage());
             // Pass the original exception code to preserve HTTP status (e.g., 400 for bad request)
             throw new \Exception('Failed to generate summary: ' . $e->getMessage(), $e->getCode());
         }
@@ -204,7 +201,7 @@ class AIService
             // Try to connect to health endpoint
             $healthUrl = $this->aiServiceUrl . '/health';
 
-            error_log("🔍 Testing AI Service connection: $healthUrl");
+            error_log(" Testing AI Service connection: $healthUrl");
 
             $ch = curl_init($healthUrl);
             curl_setopt_array($ch, [
@@ -220,7 +217,7 @@ class AIService
 
             $isConnected = $httpCode === 200;
 
-            error_log($isConnected ? "✅ AI Service is reachable" : "❌ AI Service connection failed");
+            error_log($isConnected ? "AI Service is reachable" : " AI Service connection failed");
 
             return [
                 'connected' => $isConnected,
@@ -231,7 +228,8 @@ class AIService
             ];
 
         } catch (\Exception $e) {
-            error_log("❌ AI Service connection test failed: " . $e->getMessage());
+            error_log("
+Try checking if the AI service URL is correct in your environment settings.AI Service connection test failed: " . $e->getMessage());
             return [
                 'connected' => false,
                 'error' => $e->getMessage(),

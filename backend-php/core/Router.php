@@ -235,6 +235,7 @@ class Router
 
     /**
      * Handle exceptions
+     * Production-safe error handling
      * 
      * @param \Exception $e
      * @param Response $response
@@ -243,19 +244,63 @@ class Router
     private function handleException(\Exception $e, Response $response): void
     {
         $config = require __DIR__ . '/../config/app.php';
+        $isDebug = $config['debug'] && ($config['env'] ?? 'development') !== 'production';
         
-        if ($config['debug']) {
+        // Get request ID if available
+        $requestId = method_exists($response, 'getRequestId') ? ($response->getRequestId() ?? 'unknown') : 'unknown';
+        
+        // Log full error details (never expose in response)
+        $errorLog = [
+            'timestamp' => date('Y-m-d H:i:s'),
+            'request_id' => $requestId,
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),  // Fixed: use getLine() instead of getCode()
+            'trace' => $e->getTraceAsString()
+        ];
+        
+        // Remove sensitive data from logs
+        $errorLog['message'] = $this->sanitizeLogMessage($e->getMessage());
+        
+        error_log('[ERROR] ' . json_encode($errorLog, JSON_UNESCAPED_SLASHES));
+        
+        // Response based on environment
+        if ($isDebug) {
             $response->json([
-                'error' => $e->getMessage(),
+                'error' => 'Internal server error',
+                'message' => $e->getMessage(),
+                'request_id' => $requestId,
                 'trace' => $e->getTraceAsString()
             ], 500);
         } else {
+            // Production: Generic error message
             $response->json([
-                'error' => 'Internal server error'
+                'error' => 'Internal server error',
+                'request_id' => $requestId
             ], 500);
         }
-
-        // Log error
-        error_log('[ERROR] ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+    }
+    
+    /**
+     * Sanitize log messages to remove sensitive data
+     * 
+     * @param string $message
+     * @return string
+     */
+    private function sanitizeLogMessage(string $message): string
+    {
+        // Remove potential API keys, tokens, passwords
+        $patterns = [
+            '/password["\']?\s*[:=]\s*["\']?[^"\'\s]+/i' => 'password=***',
+            '/api[_-]?key["\']?\s*[:=]\s*["\']?[^"\'\s]+/i' => 'api_key=***',
+            '/token["\']?\s*[:=]\s*["\']?[^"\'\s]+/i' => 'token=***',
+            '/secret["\']?\s*[:=]\s*["\']?[^"\'\s]+/i' => 'secret=***',
+        ];
+        
+        foreach ($patterns as $pattern => $replacement) {
+            $message = preg_replace($pattern, $replacement, $message);
+        }
+        
+        return $message;
     }
 }

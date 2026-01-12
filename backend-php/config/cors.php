@@ -1,8 +1,16 @@
 <?php
 return [
     // Allowed origins - parsed from environment variable
+    // Production: MUST be set via CORS_ALLOWED_ORIGINS env var (no localhost defaults)
+    // Development: Defaults to localhost for local development
     'allowed_origins' => array_filter(
-        array_map('trim', explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? 'http://localhost:5173,http://localhost:3000,http://localhost:8080,https://summarytube.vercel.app'))
+        array_map('trim', 
+            !empty($_ENV['CORS_ALLOWED_ORIGINS']) 
+                ? explode(',', $_ENV['CORS_ALLOWED_ORIGINS'])
+                : (($_ENV['APP_ENV'] ?? 'development') === 'production' 
+                    ? [] 
+                    : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080'])
+        )
     ),
     
     // Allowed HTTP methods

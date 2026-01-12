@@ -32,7 +32,11 @@ class AuthController
         $samesite = $_ENV['COOKIE_SAMESITE'] ?? 'None';
         $httponly = filter_var($_ENV['COOKIE_HTTPONLY'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
-        error_log("🍪 Setting Cookies - Domain: " . ($domain ?? 'null') . ", Secure: " . ($secure ? 'Y' : 'N') . ", SameSite: " . $samesite);
+        // Log cookie settings only in debug mode (don't expose in production)
+        $isDebug = filter_var($_ENV['APP_DEBUG'] ?? 'false', FILTER_VALIDATE_BOOLEAN);
+        if ($isDebug) {
+            error_log("🍪 Setting Cookies - Domain: " . ($domain ?? 'null') . ", Secure: " . ($secure ? 'Y' : 'N') . ", SameSite: " . $samesite);
+        }
 
         if (headers_sent($file, $line)) {
             error_log("❌ Headers already sent in $file on line $line. Cannot set cookies!");

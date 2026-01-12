@@ -11,6 +11,7 @@ class Response
     private int $statusCode = 200;
     private array $headers = [];
     private bool $sent = false;
+    private ?string $requestId = null;
 
     /**
      * Send JSON response
@@ -198,5 +199,27 @@ class Response
     public function isSent(): bool
     {
         return $this->sent;
+    }
+    
+    /**
+     * Set request ID for tracing
+     * 
+     * @param string $requestId
+     * @return self
+     */
+    public function setRequestId(string $requestId): self
+    {
+        $this->requestId = $requestId;
+        return $this;
+    }
+    
+    /**
+     * Get request ID
+     * 
+     * @return string|null
+     */
+    public function getRequestId(): ?string
+    {
+        return $this->requestId;
     }
 }

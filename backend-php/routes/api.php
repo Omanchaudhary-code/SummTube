@@ -5,6 +5,7 @@ use App\Controllers\SummaryController;
 use App\Controllers\UserController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\GuestLimitMiddleware;
+use App\Middleware\RateLimitMiddleware;
 
 // ==========================================
 // PUBLIC ROUTES (No authentication required)
@@ -13,31 +14,50 @@ use App\Middleware\GuestLimitMiddleware;
 // Health check
 $router->get('/api/health', function ($request, $response) {
     try {
-        $aiService = new \App\Services\AIService();
-        $aiHealth = $aiService->testConnection();
-
-        $response->json([
+        $health = [
             'status' => 'ok',
-            'message' => 'API is running',
-            'ai_service' => [
-                'status' => $aiHealth['connected'] ? 'connected' : 'unreachable',
-                'details' => $aiHealth
-            ],
-            'timestamp' => date('Y-m-d H:i:s')
-        ]);
+            'timestamp' => date('Y-m-d H:i:s'),
+            'services' => []
+        ];
+
+        // Check database connection
+        try {
+            $db = \Core\Database::getInstance();
+            $db->query('SELECT 1');
+            $health['services']['database'] = 'connected';
+        } catch (\Exception $e) {
+            $health['services']['database'] = 'disconnected';
+            $health['status'] = 'degraded';
+        }
+
+        // Check AI service connection (non-blocking)
+        try {
+            $aiService = new \App\Services\AIService();
+            $aiHealth = $aiService->testConnection();
+            $health['services']['ai_service'] = $aiHealth['connected'] ? 'connected' : 'unreachable';
+            if (!$aiHealth['connected']) {
+                $health['status'] = 'degraded';
+            }
+        } catch (\Exception $e) {
+            $health['services']['ai_service'] = 'error';
+            $health['status'] = 'degraded';
+        }
+
+        $statusCode = $health['status'] === 'ok' ? 200 : 503;
+        $response->json($health, $statusCode);
     } catch (\Exception $e) {
         $response->json([
             'status' => 'error',
-            'message' => 'API health check failed',
-            'error' => $e->getMessage()
+            'message' => 'Health check failed',
+            'timestamp' => date('Y-m-d H:i:s')
         ], 500);
     }
 });
 
-// Authentication Routes
-$router->post('/api/auth/register', [AuthController::class, 'register']);
-$router->post('/api/auth/login', [AuthController::class, 'login']);
-$router->post('/api/auth/google', [AuthController::class, 'googleAuth']);
+// Authentication Routes (with rate limiting)
+$router->post('/api/auth/register', [AuthController::class, 'register'], [RateLimitMiddleware::class]);
+$router->post('/api/auth/login', [AuthController::class, 'login'], [RateLimitMiddleware::class]);
+$router->post('/api/auth/google', [AuthController::class, 'googleAuth'], [RateLimitMiddleware::class]);
 $router->get('/api/auth/google/config', [AuthController::class, 'getGoogleConfig']);
 $router->post('/api/auth/refresh', [AuthController::class, 'refresh']);
 $router->post('/api/auth/logout', [AuthController::class, 'logout']);
@@ -101,75 +121,75 @@ $router->post(
     [AuthMiddleware::class]
 );
 
-// ==========================================
-// DEBUG ROUTES (Remove in production)
-// ==========================================
+// // ==========================================
+// // DEBUG ROUTES (Remove in production)
+// // ==========================================
 
-if ($_ENV['APP_ENV'] === 'development' || ($_ENV['APP_DEBUG'] ?? false)) {
+// if ($_ENV['APP_ENV'] === 'development' || ($_ENV['APP_DEBUG'] ?? false)) {
 
-    // Debug: Check headers
-    $router->get('/api/debug/headers', function ($request, $response) {
-        $response->json([
-            'all_headers' => $request->headers(),
-            'authorization' => $request->header('Authorization'),
-            'bearer_token' => $request->bearerToken(),
-            'token_length' => $request->bearerToken() ? strlen($request->bearerToken()) : 0
-        ]);
-    });
+//     // Debug: Check headers
+//     $router->get('/api/debug/headers', function ($request, $response) {
+//         $response->json([
+//             'all_headers' => $request->headers(),
+//             'authorization' => $request->header('Authorization'),
+//             'bearer_token' => $request->bearerToken(),
+//             'token_length' => $request->bearerToken() ? strlen($request->bearerToken()) : 0
+//         ]);
+//     });
 
-    // Debug: Test protected route
-    $router->get('/api/debug/auth-test', function ($request, $response) {
-        $response->json([
-            'message' => 'This is a public debug route',
-            'has_token' => $request->bearerToken() !== null
-        ]);
-    });
+//     // Debug: Test protected route
+//     $router->get('/api/debug/auth-test', function ($request, $response) {
+//         $response->json([
+//             'message' => 'This is a public debug route',
+//             'has_token' => $request->bearerToken() !== null
+//         ]);
+//     });
 
-    // Debug: Decode token (without verification)
-    $router->post('/api/debug/decode-token', function ($request, $response) {
-        $data = $request->body();
-        $token = $data['token'] ?? '';
+//     // Debug: Decode token (without verification)
+//     $router->post('/api/debug/decode-token', function ($request, $response) {
+//         $data = $request->body();
+//         $token = $data['token'] ?? '';
 
-        if (empty($token)) {
-            $response->json(['error' => 'Token required'], 400);
-            return;
-        }
+//         if (empty($token)) {
+//             $response->json(['error' => 'Token required'], 400);
+//             return;
+//         }
 
-        try {
-            $jwtService = new \App\Services\JWTService();
-            $decoded = $jwtService->decode($token);
-            $response->json([
-                'decoded' => $decoded,
-                'issued_at' => date('Y-m-d H:i:s', $decoded['iat'] ?? 0),
-                'expires_at' => date('Y-m-d H:i:s', $decoded['exp'] ?? 0),
-                'is_expired' => ($decoded['exp'] ?? 0) < time()
-            ]);
-        } catch (\Exception $e) {
-            $response->json(['error' => $e->getMessage()], 400);
-        }
-    });
+//         try {
+//             $jwtService = new \App\Services\JWTService();
+//             $decoded = $jwtService->decode($token);
+//             $response->json([
+//                 'decoded' => $decoded,
+//                 'issued_at' => date('Y-m-d H:i:s', $decoded['iat'] ?? 0),
+//                 'expires_at' => date('Y-m-d H:i:s', $decoded['exp'] ?? 0),
+//                 'is_expired' => ($decoded['exp'] ?? 0) < time()
+//             ]);
+//         } catch (\Exception $e) {
+//             $response->json(['error' => $e->getMessage()], 400);
+//         }
+//     });
 
-    // Debug: Reset guest limit
-    $router->post('/api/debug/reset-guest', function ($request, $response) {
-        $guestService = new \App\Services\GuestService();
-        $identifier = $guestService->generateIdentifier(
-            $request->ip(),
-            $request->userAgent()
-        );
+//     // Debug: Reset guest limit
+//     $router->post('/api/debug/reset-guest', function ($request, $response) {
+//         $guestService = new \App\Services\GuestService();
+//         $identifier = $guestService->generateIdentifier(
+//             $request->ip(),
+//             $request->userAgent()
+//         );
 
-        // Reset guest usage
-        $db = \Core\Database::getInstance();
-        $sql = "UPDATE guest_usage SET summaries_count = 0, reset_at = NOW() + INTERVAL '24 hours' WHERE identifier = :identifier";
-        $stmt = $db->prepare($sql);
-        $stmt->execute([':identifier' => $identifier]);
+//         // Reset guest usage
+//         $db = \Core\Database::getInstance();
+//         $sql = "UPDATE guest_usage SET summaries_count = 0, reset_at = NOW() + INTERVAL '24 hours' WHERE identifier = :identifier";
+//         $stmt = $db->prepare($sql);
+//         $stmt->execute([':identifier' => $identifier]);
 
-        $response->json([
-            'success' => true,
-            'message' => 'Guest limit reset',
-            'identifier' => $identifier
-        ]);
-    });
-}
+//         $response->json([
+//             'success' => true,
+//             'message' => 'Guest limit reset',
+//             'identifier' => $identifier
+//         ]);
+//     });
+// }
 
 // ==========================================
 // 404 Handler (Must be last)

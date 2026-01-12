@@ -67,5 +67,15 @@ async def create_summary(request: SummaryRequest):
         logger.error(f"Rate limit exceeded: {str(e)}")
         raise HTTPException(status_code=429, detail="AI Service is currently overloaded. Please try again later.")
     except Exception as e:
-        logger.error(f"Error generating summary: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate summary: {str(e)}")
+        # Sanitize error message for production
+        import os
+        env = os.getenv("APP_ENV", "development")
+        
+        if env == "production":
+            # Production: Generic error message
+            logger.error(f"Error generating summary: {str(e)}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Failed to generate summary. Please try again later.")
+        else:
+            # Development: Detailed error
+            logger.error(f"Error generating summary: {str(e)}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Failed to generate summary: {str(e)}")

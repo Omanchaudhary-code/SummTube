@@ -16,6 +16,7 @@ class Request
     public ?array $user = null;
     public ?array $guestStatus = null;
     public ?string $guestIdentifier = null;  // ✅ FIXED: Added this property
+    public ?string $requestId = null;  // Request ID for tracing
 
     /**
      * Get request method (GET, POST, etc.)

@@ -54,5 +54,8 @@ EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8001/api/v1/health || exit 1
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Run the application with production settings
+# Workers count can be overridden with WORKERS env var (default: 2)
+# For CPU-bound tasks, use: workers = (2 * CPU cores) + 1
+# For I/O-bound tasks (like this API), use: workers = (4 * CPU cores)
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8001 --workers ${WORKERS:-2} --no-access-log --log-level info"]

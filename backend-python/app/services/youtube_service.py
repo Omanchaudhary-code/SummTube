@@ -148,10 +148,31 @@ class YouTubeService:
                 detailed_error = " | ".join(error_details)
                 logger.error(f"No transcript found for {video_id}. Errors: {detailed_error}")
                 
-                if "Sign in to confirm" in detailed_error or "403" in detailed_error or "429" in detailed_error or "Too Many Requests" in detailed_error:
-                    raise ValueError("YouTube blocked the request (Bot detected). Please try again in 15-20 minutes or use a different video link.")
+                # Check for specific error patterns
+                if "Sign in to confirm" in detailed_error or "403" in detailed_error:
+                    raise ValueError("YouTube blocked the request. This video may require sign-in or be restricted. Try using YOUTUBE_COOKIES environment variable or use a different video.")
                 
-                raise ValueError("Could not fetch transcript for this video. It may have captions disabled or be age-restricted.")
+                if "429" in detailed_error or "Too Many Requests" in detailed_error:
+                    raise ValueError("YouTube rate limit exceeded. Please try again in 15-20 minutes or use a different video link.")
+                
+                if "No transcripts were found" in detailed_error or "TranscriptsDisabled" in detailed_error:
+                    raise ValueError("This video does not have captions/transcripts available. Please try a video with captions enabled.")
+                
+                if "Video unavailable" in detailed_error or "Private video" in detailed_error:
+                    raise ValueError("This video is unavailable, private, or has been deleted.")
+                
+                # Generic error with helpful suggestions
+                error_msg = "Could not fetch transcript for this video. "
+                suggestions = []
+                
+                if not cookie_file:
+                    suggestions.append("Try setting YOUTUBE_COOKIES environment variable for better access")
+                
+                suggestions.append("The video may have captions disabled")
+                suggestions.append("The video may be age-restricted or region-locked")
+                
+                error_msg += "Possible reasons: " + "; ".join(suggestions) + "."
+                raise ValueError(error_msg)
             
             return {
                 "video_id": video_id,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ListCollapse, Send, X, Menu } from "lucide-react";
+import { ListCollapse, Send, X, Menu, Sparkles, Zap, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import logo from "../assets/logo.png";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
@@ -8,14 +8,14 @@ import toast from "react-hot-toast";
 
 const NavMenuBtn = ({ onLoginClick, onSignupClick, isMobile }) => {
   return (
-    <div  // Changed from <li> to <div>
+    <div
       className={`flex ${isMobile ? "flex-col w-full px-6 gap-3" : "gap-3"
         }`}
     >
       <button
         onClick={onLoginClick}
         className={`${isMobile ? "w-full" : ""
-          } px-4 py-2 rounded border hover:bg-gray-100 transition`}
+          } px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors`}
       >
         Login
       </button>
@@ -23,15 +23,13 @@ const NavMenuBtn = ({ onLoginClick, onSignupClick, isMobile }) => {
       <button
         onClick={onSignupClick}
         className={`${isMobile ? "w-full" : ""
-          } px-4 py-2 rounded bg-white text-black hover:opacity-90 transition`}
+          } px-4 py-2 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors`}
       >
         Sign up for free
       </button>
-    </div>  // Changed from </li> to </div>
+    </div>
   );
 };
-
-
 
 const LoginModal = ({ onClose, onSwitchToSignup }) => {
   const navigate = useNavigate();
@@ -45,7 +43,6 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
   const [googleReady, setGoogleReady] = useState(false);
   const [googleError, setGoogleError] = useState(null);
 
-  /* ---------------- Lock background scroll ---------------- */
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
@@ -53,22 +50,18 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
     };
   }, []);
 
-  /* ---------------- Load Google Identity SDK ---------------- */
   useEffect(() => {
-    // Check if script already exists
     const existingScript = document.querySelector(
       'script[src="https://accounts.google.com/gsi/client"]'
     );
 
     if (existingScript) {
-      // Script already loaded, just initialize
       if (window.google && !isInitializing.current) {
         initGoogle();
       }
       return;
     }
 
-    // Load the script with language parameter
     const script = document.createElement("script");
     script.src = "https://accounts.google.com/gsi/client?hl=en";
     script.async = true;
@@ -85,15 +78,13 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
     document.body.appendChild(script);
 
     return () => {
-      // Cleanup is handled by React
+      // Cleanup
     };
   }, []);
 
-  /* ---------------- Render Google Button When Ready ---------------- */
   useEffect(() => {
     if (googleReady && googleButtonRef.current && window.google) {
       try {
-        // Clear any existing button
         googleButtonRef.current.innerHTML = "";
 
         window.google.accounts.id.renderButton(googleButtonRef.current, {
@@ -110,16 +101,14 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
     }
   }, [googleReady]);
 
-  /* ---------------- Init Google ---------------- */
   const initGoogle = async () => {
     if (isInitializing.current) {
-      return; // Prevent double initialization
+      return;
     }
 
     isInitializing.current = true;
 
     try {
-      // Fetch config from backend
       const res = await api.get("/auth/google/config");
 
       if (!res.data.success) {
@@ -130,14 +119,12 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
         throw new Error("Google Client ID not configured");
       }
 
-      // Check if Google SDK is loaded
       if (!window.google?.accounts?.id) {
         throw new Error("Google SDK not loaded");
       }
 
       const googleClientId = res.data.client_id;
 
-      // Initialize Google Sign-In
       window.google.accounts.id.initialize({
         client_id: googleClientId,
         callback: handleGoogleResponse,
@@ -160,7 +147,6 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
     }
   };
 
-  /* ---------------- Google Login Callback ---------------- */
   const handleGoogleResponse = async (response) => {
     if (!response.credential) {
       alert("Google sign-in failed. No credential received.");
@@ -178,13 +164,8 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
       );
 
       if (result.data.success && result.data.user) {
-        // Show success message
-        alert(`Welcome, ${result.data.user.name}!`);
-
-        // Close modal
+        toast.success(`Welcome, ${result.data.user.name}!`);
         onClose();
-
-        // Navigate to home or dashboard
         navigate("/dashboard");
       } else {
         throw new Error("Invalid response from server");
@@ -196,18 +177,17 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
         err.message ||
         "Google login failed. Please try again.";
 
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  /* ---------------- Local Login ---------------- */
   const handleLocalLogin = async (e) => {
     e.preventDefault();
 
     if (!email || !password) {
-      alert("Please fill in all fields");
+      toast.error("Please fill in all fields");
       return;
     }
 
@@ -220,7 +200,7 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
       });
 
       if (result.data.success && result.data.user) {
-        alert(`Welcome back, ${result.data.user.name}!`);
+        toast.success(`Welcome back, ${result.data.user.name}!`);
         onClose();
         navigate("/dashboard");
       } else {
@@ -233,25 +213,23 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
         err.message ||
         "Login failed. Please check your credentials.";
 
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
-  /* ---------------- UI ---------------- */
+
   return (
     <div
       onClick={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="login-modal-title"
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-xl"
       >
-        {/* Logo */}
         <div className="flex justify-center mb-4">
           <img
             src={logo}
@@ -263,18 +241,13 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
           />
         </div>
 
-        {/* Header */}
-        <h2
-          id="login-modal-title"
-          className="text-2xl font-semibold mb-1 text-gray-800 text-center"
-        >
+        <h2 className="text-2xl font-semibold mb-1 text-gray-800 text-center">
           Welcome to SummTube
         </h2>
         <p className="text-gray-500 mb-6 text-center">
           Login or continue with Google
         </p>
 
-        {/* ---------- Email Login Form ---------- */}
         <form onSubmit={handleLocalLogin} className="space-y-4">
           <div>
             <input
@@ -285,7 +258,6 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed transition"
-              aria-label="Email"
             />
           </div>
 
@@ -298,14 +270,12 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
               className="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-gray-800 disabled:bg-gray-100 disabled:cursor-not-allowed transition"
-              aria-label="Password"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               disabled={isLoading}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:cursor-not-allowed"
-              aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <HiEyeOff size={20} /> : <HiEye size={20} />}
             </button>
@@ -320,14 +290,12 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
           </button>
         </form>
 
-        {/* ---------- Divider ---------- */}
         <div className="flex items-center my-6">
           <div className="flex-1 border-t border-gray-300" />
           <span className="px-4 text-sm text-gray-500">or</span>
           <div className="flex-1 border-t border-gray-300" />
         </div>
 
-        {/* ---------- Google Sign-In ---------- */}
         <div className="w-full">
           {googleError ? (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm text-center">
@@ -350,31 +318,12 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
               disabled
               className="w-full flex items-center justify-center gap-3 border border-gray-300 py-2.5 rounded-lg bg-gray-50 cursor-not-allowed opacity-60"
             >
-              <svg
-                className="w-5 h-5 animate-spin text-gray-500"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
+              <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
               <span className="text-gray-600">Loading Google Sign-In...</span>
             </button>
           )}
         </div>
 
-        {/* ---------- Footer ---------- */}
         <div className="border-t border-gray-200 mt-6 pt-4 text-center text-sm">
           <span className="text-gray-500">New to SummTube? </span>
           <button
@@ -393,7 +342,6 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
 const SignupModal = ({
   onClose,
   onSwitchToLogin,
-  variant = "default"
 }) => {
   const [form, setForm] = useState({
     name: "",
@@ -404,8 +352,6 @@ const SignupModal = ({
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const isTryBoard = variant === "tryboard";
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -448,12 +394,7 @@ const SignupModal = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`
-          w-full max-w-[450px]
-          rounded-xl p-6 shadow-xl
-          animate-scaleIn text-center
-          ${isTryBoard ? "bg-white text-black" : "bg-white"}
-        `}
+        className="w-full max-w-[450px] rounded-xl p-6 shadow-xl animate-scaleIn bg-white text-center"
       >
         <div className="flex justify-center mb-3">
           <img src={logo} alt="logo" className="w-24" />
@@ -463,7 +404,7 @@ const SignupModal = ({
           Welcome to SummTube
         </h2>
 
-        <p className={`mb-6 ${isTryBoard ? "text-gray-700" : "text-gray-500"}`}>
+        <p className="text-gray-500 mb-6">
           Register with your email
         </p>
 
@@ -474,7 +415,7 @@ const SignupModal = ({
             value={form.name}
             onChange={handleChange}
             required
-            className="w-full mb-3 px-3 py-2.5 border rounded"
+            className="w-full mb-3 px-3 py-2.5 border rounded-lg"
           />
 
           <input
@@ -484,7 +425,7 @@ const SignupModal = ({
             value={form.email}
             onChange={handleChange}
             required
-            className="w-full mb-3 px-3 py-2.5 border rounded"
+            className="w-full mb-3 px-3 py-2.5 border rounded-lg"
           />
 
           <div className="relative mb-3">
@@ -495,7 +436,7 @@ const SignupModal = ({
               value={form.password}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2.5 border rounded pr-10"
+              className="w-full px-3 py-2.5 border rounded-lg pr-10"
             />
             <button
               type="button"
@@ -513,7 +454,7 @@ const SignupModal = ({
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-black text-white rounded"
+            className="w-full py-2.5 bg-black text-white rounded-lg"
           >
             {loading ? "Creating..." : "Sign Up"}
           </button>
@@ -532,6 +473,81 @@ const SignupModal = ({
     </div>
   );
 };
+
+// Typing animation component for real-time summary display
+const TypingAnimation = ({ text, onComplete }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    if (currentIndex < text.length) {
+      intervalRef.current = setTimeout(() => {
+        setDisplayedText(text.slice(0, currentIndex + 1));
+        setCurrentIndex(currentIndex + 1);
+      }, 15); // Adjust speed here (lower = faster)
+    } else if (currentIndex === text.length && onComplete) {
+      onComplete();
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearTimeout(intervalRef.current);
+      }
+    };
+  }, [currentIndex, text, onComplete]);
+
+  useEffect(() => {
+    // Reset when text changes
+    setDisplayedText("");
+    setCurrentIndex(0);
+  }, [text]);
+
+  return (
+    <div className="leading-relaxed">
+      {displayedText}
+      {currentIndex < text.length && (
+        <span className="inline-block w-0.5 h-5 bg-gray-400 ml-1 animate-pulse" />
+      )}
+    </div>
+  );
+};
+
+// Progress steps component for generation process
+const GenerationSteps = ({ currentStep }) => {
+  const steps = [
+    { id: 1, label: "Fetching video", icon: "📹" },
+    { id: 2, label: "Extracting transcript", icon: "📝" },
+    { id: 3, label: "Analyzing content", icon: "🧠" },
+    { id: 4, label: "Generating summary", icon: "✨" },
+  ];
+
+  return (
+    <div className="flex items-center justify-center gap-4 py-8">
+      {steps.map((step, index) => (
+        <div key={step.id} className="flex items-center gap-2">
+          <div
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all duration-500 ${
+              currentStep >= step.id
+                ? "bg-gradient-to-br from-emerald-400 to-blue-500 text-white scale-110 shadow-lg"
+                : "bg-gray-200 text-gray-400"
+            }`}
+          >
+            {currentStep >= step.id ? "✓" : step.icon}
+          </div>
+          {index < steps.length - 1 && (
+            <div
+              className={`w-16 h-1 transition-all duration-500 ${
+                currentStep > step.id ? "bg-gradient-to-r from-emerald-400 to-blue-500" : "bg-gray-200"
+              }`}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const TryBoard = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSignupOpen, setIsSignupOpen] = useState(false);
@@ -541,8 +557,11 @@ const TryBoard = () => {
   const [triesLeft, setTriesLeft] = useState(3);
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState(null);
+  const [generationStep, setGenerationStep] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
+  const summaryRef = useRef(null);
 
-  // Fetch guest status on component mount
+  // Fetch guest status on component mount and after each summary
   useEffect(() => {
     fetchGuestStatus();
   }, []);
@@ -550,9 +569,8 @@ const TryBoard = () => {
   const fetchGuestStatus = async () => {
     try {
       const response = await api.get("/guest/status");
-
       if (response.data.success) {
-        setTriesLeft(response.data.status.triesLeft);
+        setTriesLeft(response.data.status.triesLeft || 0);
       }
     } catch (error) {
       console.error("Error fetching guest status:", error);
@@ -561,12 +579,12 @@ const TryBoard = () => {
 
   const handleSubmit = async () => {
     if (!link.trim()) {
-      alert("Please enter a YouTube link");
+      toast.error("Please enter a YouTube link");
       return;
     }
 
     if (triesLeft <= 0) {
-      alert("You've used all your free tries! Please login to continue.");
+      toast.error("You've used all your free tries! Please login to continue.");
       setIsLoginOpen(true);
       return;
     }
@@ -574,6 +592,19 @@ const TryBoard = () => {
     setIsLoading(true);
     setError(null);
     setSummary(null);
+    setGenerationStep(1);
+    setIsTyping(false);
+
+    // Simulate progress steps
+    const stepInterval = setInterval(() => {
+      setGenerationStep((prev) => {
+        if (prev >= 4) {
+          clearInterval(stepInterval);
+          return 4;
+        }
+        return prev + 1;
+      });
+    }, 2000);
 
     try {
       const response = await api.post("/summary/guest", {
@@ -581,100 +612,150 @@ const TryBoard = () => {
         summary_type: "detailed",
       });
 
+      clearInterval(stepInterval);
+      setGenerationStep(4);
+
       if (response.data.success) {
-        setSummary(response.data);
-        setTriesLeft(response.data.guest_status.triesLeft);
-        setLink("");
+        // Small delay before showing summary for smooth transition
+        setTimeout(() => {
+          setSummary(response.data);
+          setTriesLeft(response.data.guest_status?.triesLeft || 0);
+          setLink("");
+          setIsTyping(true);
+          
+          // Scroll to summary when it appears
+          setTimeout(() => {
+            summaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 100);
+        }, 500);
 
         if (response.data.message) {
-          alert(response.data.message);
+          toast.success(response.data.message);
         }
       } else {
         setError(response.data.error || response.data.message || "Failed to generate summary");
-        alert(response.data.error || "Failed to generate summary. Please try again.");
+        toast.error(response.data.error || "Failed to generate summary");
       }
     } catch (error) {
+      clearInterval(stepInterval);
+      setGenerationStep(0);
       console.error("Error submitting link:", error);
       const errorTitle = error.response?.data?.error || "Error generating summary";
       const errorDetail = error.response?.data?.message || "Please check your internet connection and try again.";
       setError(errorTitle);
-      alert(`${errorTitle}\n\n${errorDetail}`);
+      toast.error(`${errorTitle}: ${errorDetail}`);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const trialPercentage = (triesLeft / 3) * 100;
+
   return (
     <>
-      <div className="wrapper h-screen w-screen flex text-white overflow-hidden">
+      <div className="min-h-screen w-full bg-[var(--bg-main)] flex overflow-hidden">
         {/* LEFT SIDEBAR */}
         <div
-          className={`left-section h-full bg-[#202124] flex-shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-64" : "w-0 md:w-16"
-            } overflow-hidden`}
+          className={`left-section h-screen bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 ease-in-out ${
+            isSidebarOpen ? "w-80" : "w-0 md:w-20"
+          } overflow-hidden shadow-sm`}
         >
-          <div className={`h-full ${isSidebarOpen ? "p-5" : "p-2 md:p-3"}`}>
-            {/* Logo and Toggle Section */}
+          <div className={`h-full ${isSidebarOpen ? "p-6" : "p-3"}`}>
+            {/* Logo and Toggle */}
             <div className="flex items-center justify-between mb-8">
               {isSidebarOpen ? (
                 <>
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span>
-                        <img src={logo} alt="Summtube logo" />
-                      </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
+                      <img src={logo} alt="Summtube logo" className="w-8 h-8" />
                     </div>
+                    <span className="font-bold text-lg">SummTube</span>
                   </div>
                   <button
                     onClick={() => setIsSidebarOpen(false)}
-                    className="hover:bg-cyan-400 p-1 rounded transition-colors flex-shrink-0"
+                    className="hover:bg-gray-100 p-2 rounded-lg transition-colors"
                   >
-                    <ListCollapse size={24} />
+                    <ListCollapse size={20} className="text-gray-600" />
                   </button>
                 </>
               ) : (
                 <button
                   onClick={() => setIsSidebarOpen(true)}
-                  className="w-full flex justify-center hover:bg-cyan-400 p-2 rounded transition-colors"
+                  className="w-full flex justify-center hover:bg-gray-100 p-2 rounded-lg transition-colors"
                 >
-                  <Menu size={24} />
+                  <Menu size={24} className="text-gray-600" />
                 </button>
               )}
             </div>
 
-            {/* Guest Trial Info - Only show when sidebar is open */}
+            {/* Guest Trial Info */}
             {isSidebarOpen && (
               <div className="space-y-4">
-                <div className="bg-[#181818] rounded-lg p-4">
-                  <h3 className="font-semibold text-lg mb-2">Guest Trial</h3>
-                  <p className="text-sm text-cyan-100 mb-3">
-                    You can try SummTube {triesLeft} more {triesLeft === 1 ? "time" : "times"} for
-                    free!
-                  </p>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs">Tries remaining:</span>
-                    <span className="font-bold text-lg">{triesLeft}/3</span>
+                <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-5 border border-emerald-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-5 h-5 text-emerald-600" />
+                    <h3 className="font-semibold text-lg text-gray-800">Free Trial</h3>
                   </div>
-                  <div className="w-full bg-[#282828] rounded-full h-2 mb-3">
-                    <div
-                      className="bg-white h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(triesLeft / 3) * 100}%` }}
-                    />
+                  
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-600">Tries remaining</span>
+                      <span className={`font-bold text-2xl ${triesLeft === 0 ? "text-red-500" : triesLeft === 1 ? "text-orange-500" : "text-emerald-600"}`}>
+                        {triesLeft}
+                      </span>
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ease-out ${
+                          triesLeft === 0
+                            ? "bg-red-400"
+                            : triesLeft === 1
+                            ? "bg-orange-400"
+                            : "bg-gradient-to-r from-emerald-400 to-blue-500"
+                        }`}
+                        style={{ width: `${trialPercentage}%` }}
+                      />
+                    </div>
+                    
+                    <p className="text-xs text-gray-500 mt-2">
+                      {triesLeft === 0
+                        ? "All trials used"
+                        : triesLeft === 1
+                        ? "Last trial remaining"
+                        : `${triesLeft} trials remaining`}
+                    </p>
                   </div>
+
                   <button
                     onClick={() => setIsLoginOpen(true)}
-                    className="w-full bg-white text-black py-2 rounded font-semibold hover:bg-cyan-50 transition-colors text-sm px-3"
+                    className="w-full bg-black text-white py-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-sm"
                   >
                     Login for Unlimited Access
                   </button>
                 </div>
 
-                <div className="bg-[#181818] bg-opacity-50 rounded-lg p-4">
-                  <h4 className="font-semibold mb-2 text-sm">Why Login?</h4>
-                  <ul className="space-y-2 text-xs text-cyan-100">
-                    <li>✓ Unlimited summaries</li>
-                    <li>✓ Save your history</li>
-                    <li>✓ Download summaries</li>
-                    <li>✓ Priority support</li>
+                {/* Benefits Card */}
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <h4 className="font-semibold mb-3 text-sm text-gray-800">Why Login?</h4>
+                  <ul className="space-y-2 text-xs text-gray-600">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      Unlimited summaries
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      Save your history
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      Download summaries
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      Priority support
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -682,12 +763,14 @@ const TryBoard = () => {
           </div>
         </div>
 
-        {/* RIGHT SECTION */}
-        <div className="right-section flex-1 h-full bg-[#181818] flex flex-col overflow-hidden">
+        {/* MAIN CONTENT */}
+        <div className="flex-1 h-screen flex flex-col overflow-hidden bg-[var(--bg-main)]">
           {/* Top Navigation */}
-          <div className="top-section py-3 px-4 md:py-4 md:px-6 lg:px-10 flex items-center justify-between border-b border-cyan-600 flex-shrink-0">
+          <div className="top-section py-4 px-6 lg:px-10 flex items-center justify-between border-b border-gray-200 bg-white flex-shrink-0">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">SummTube</h1>
+              <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+                SummTube
+              </h1>
             </div>
             <div className="hidden md:block">
               <NavMenuBtn
@@ -698,110 +781,180 @@ const TryBoard = () => {
             <div className="md:hidden">
               <button
                 onClick={() => setIsLoginOpen(true)}
-                className="px-3 py-1.5 bg-white text-cyan-700 rounded text-sm"
+                className="px-4 py-2 bg-black text-white rounded-lg text-sm hover:bg-gray-800 transition"
               >
                 Login
               </button>
             </div>
           </div>
 
-          {/* Summary Content Section */}
-          <div className="summary-content-section flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-            <div className="max-w-4xl mx-auto">
-              <div className="bg-cyan-600 rounded-lg p-6 mb-4">
-                <h2 className="text-xl md:text-2xl font-semibold mb-3">
-                  Welcome to SummTube - Trial Mode
-                </h2>
-                <p className="text-cyan-100 text-sm md:text-base mb-2">
-                  Paste a YouTube link below to get an AI-generated summary of the video content.
-                </p>
-                <p className="text-cyan-200 text-xs md:text-sm">
-                  💡 You have{" "}
-                  <span className="font-bold text-white">
-                    {triesLeft} free {triesLeft === 1 ? "try" : "tries"}
-                  </span>{" "}
-                  remaining. Login for unlimited access!
-                </p>
+          {/* Main Content Area */}
+          <div className="flex-1 overflow-y-auto p-6 lg:p-10">
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Welcome Card */}
+              <div className="bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 rounded-2xl p-8 border border-emerald-100 shadow-sm">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Zap className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-2xl lg:text-3xl font-bold mb-2 text-gray-800">
+                      Try SummTube Free
+                    </h2>
+                    <p className="text-gray-600 leading-relaxed">
+                      Paste a YouTube link below to get an AI-generated summary. Experience the power of AI-powered video summarization.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="mt-4 flex items-center gap-2 text-sm">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-600">
+                    You have{" "}
+                    <span className={`font-bold ${triesLeft === 0 ? "text-red-500" : triesLeft === 1 ? "text-orange-500" : "text-emerald-600"}`}>
+                      {triesLeft} free {triesLeft === 1 ? "try" : "tries"}
+                    </span>{" "}
+                    remaining
+                  </span>
+                </div>
               </div>
 
+              {/* Generation Steps (shown during loading) */}
+              {isLoading && (
+                <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm animate-slideDown">
+                  <h3 className="text-lg font-semibold mb-6 text-center text-gray-800">
+                    Generating your summary...
+                  </h3>
+                  <GenerationSteps currentStep={generationStep} />
+                  <p className="text-center text-sm text-gray-500 mt-4">
+                    This may take 15-30 seconds
+                  </p>
+                </div>
+              )}
+
               {/* Error Display */}
-              {error && (
-                <div className="bg-red-500 bg-opacity-20 border border-red-500 rounded-lg p-4 mb-4">
-                  <p className="text-red-200">{error}</p>
+              {error && !isLoading && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-6 animate-slideDown">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-red-800 mb-1">Error</h4>
+                      <p className="text-red-700 text-sm">{error}</p>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* Summary Display */}
-              {summary && (
-                <div className="bg-[#202124] rounded-lg p-6 space-y-4">
-                  <div className="flex items-start gap-4">
+              {summary && !isLoading && (
+                <div
+                  ref={summaryRef}
+                  className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg animate-slideDown space-y-6"
+                >
+                  {/* Video Header */}
+                  <div className="flex flex-col sm:flex-row gap-4 pb-6 border-b border-gray-200">
                     {summary.thumbnail && (
                       <img
                         src={summary.thumbnail}
                         alt={summary.video_title}
-                        className="w-32 h-20 object-cover rounded"
+                        className="w-full sm:w-48 h-32 object-cover rounded-xl flex-shrink-0"
                       />
                     )}
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2">{summary.video_title}</h3>
-                      <p className="text-sm text-cyan-300">
-                        Duration: {Math.floor(summary.duration / 60)}:{String(summary.duration % 60).padStart(2, '0')}
-                      </p>
+                    <div className="flex-1">
+                      <h3 className="text-xl lg:text-2xl font-bold mb-2 text-gray-800">
+                        {summary.video_title}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {Math.floor(summary.duration / 60)}:{String(summary.duration % 60).padStart(2, '0')}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Zap className="w-4 h-4" />
+                          {summary.processing_time}s
+                        </div>
+                        <div className="text-gray-500">
+                          {summary.transcript_length?.toLocaleString()} chars
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="border-t border-cyan-600 pt-4">
-                    <h4 className="text-lg font-semibold mb-2">Summary:</h4>
-                    <p className="text-cyan-100 leading-relaxed whitespace-pre-wrap">
-                      {summary.summary}
-                    </p>
+                  {/* Summary Content */}
+                  <div>
+                    <h4 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-emerald-500" />
+                      AI Summary
+                    </h4>
+                    <div className="prose prose-sm max-w-none">
+                      {isTyping ? (
+                        <div className="text-gray-700 leading-relaxed min-h-[200px]">
+                          <TypingAnimation
+                            text={summary.summary}
+                            onComplete={() => setIsTyping(false)}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                          {summary.summary}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-sm text-cyan-300 border-t border-cyan-600 pt-4">
-                    <span>Transcript length: {summary.transcript_length} characters</span>
-                    <span>Processed in {summary.processing_time}s</span>
+                  {/* Footer Stats */}
+                  <div className="pt-6 border-t border-gray-200 flex items-center justify-between text-sm text-gray-500">
+                    <span>Summary generated successfully</span>
+                    <span className="flex items-center gap-1">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      Complete
+                    </span>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Bottom Input Section - Fixed at bottom right */}
-          <div className="bottom-section p-4 md:p-6 border-t border-cyan-600 flex-shrink-0">
+          {/* Bottom Input Section - Fixed */}
+          <div className="bottom-section p-6 border-t border-gray-200 bg-white flex-shrink-0">
             <div className="max-w-4xl mx-auto">
               <div className="relative">
-                <div className="flex items-center gap-2 bg-white rounded-full py-2 px-5">
+                <div className="flex items-center gap-3 bg-gray-50 rounded-2xl py-3 px-5 border border-gray-200 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-100 transition-all">
                   <input
                     type="text"
-                    name="text"
-                    id="text"
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
                     onKeyPress={(e) => {
-                      if (e.key === "Enter" && !isLoading) {
+                      if (e.key === "Enter" && !isLoading && triesLeft > 0) {
                         handleSubmit();
                       }
                     }}
                     placeholder="Paste YouTube link here..."
-                    className="flex-1 px-3 py-2 md:py-3 text-gray-800 outline-none text-sm md:text-base"
-                    disabled={isLoading}
+                    className="flex-1 bg-transparent outline-none text-gray-800 placeholder-gray-400 text-base"
+                    disabled={isLoading || triesLeft <= 0}
                   />
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={isLoading}
-                    className="bg-cyan-600 text-white p-2 md:p-3 rounded-lg hover:bg-cyan-500 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    disabled={isLoading || triesLeft <= 0 || !link.trim()}
+                    className={`p-3 rounded-xl transition-all ${
+                      isLoading || triesLeft <= 0 || !link.trim()
+                        ? "bg-gray-300 cursor-not-allowed"
+                        : "bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+                    }`}
                   >
                     {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
-                      <Send size={20} />
+                      <Send className="w-5 h-5" />
                     )}
                   </button>
                 </div>
               </div>
-              <p className="text-xs md:text-sm text-cyan-200 mt-2 text-center">
-                Supported: YouTube video links
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                {triesLeft <= 0
+                  ? "You've used all free trials. Login for unlimited access!"
+                  : "Supported: YouTube video links with captions"}
               </p>
             </div>
           </div>
