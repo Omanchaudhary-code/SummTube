@@ -130,15 +130,26 @@ class SummaryController
             $result = $this->aiService->generateSummary($videoUrl, $summaryType);
             error_log("✅AI Service summary generated");
 
-            // Save to database
+            // Get or create video in normalized videos table
+            try {
+                $videoId = $this->summaryModel->getOrCreateVideo([
+                    'video_id' => $result['video_id'] ?? null,
+                    'video_url' => $videoUrl,
+                    'title' => $result['title'] ?? 'Unknown',
+                    'thumbnail' => $result['thumbnail'] ?? null,
+                    'duration' => $result['duration'] ?? 0
+                ]);
+                error_log("✅Video record created/found: ID $videoId");
+            } catch (\Exception $videoError) {
+                error_log("Video creation failed: " . $videoError->getMessage());
+                throw new \Exception("Failed to save video metadata: " . $videoError->getMessage());
+            }
+
+            // Save summary to database (now with normalized video_id foreign key)
             try {
                 $summaryId = $this->summaryModel->create([
                     'user_id' => $userId,
-                    'video_url' => $videoUrl,
-                    'video_id' => $result['video_id'] ?? null,
-                    'video_title' => $result['title'] ?? 'Unknown',
-                    'thumbnail' => $result['thumbnail'] ?? null,
-                    'duration' => $result['duration'] ?? 0,
+                    'video_id' => $videoId, // INTEGER foreign key to videos table
                     'summary_text' => $result['summary'] ?? '',
                     'summary_type' => $summaryType,
                     'original_text' => '', // Can store transcript if needed
@@ -208,6 +219,7 @@ class SummaryController
             $response->json([
                 'success' => true,
                 'data' => $summaries,
+                'summaries' => $summaries, // Keep for backward compatibility
                 'pagination' => [
                     'total' => $total,
                     'page' => $page,

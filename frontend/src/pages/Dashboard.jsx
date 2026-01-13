@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { ListCollapse, Send, Menu, Download, Copy, Check, LogOut, User, Square } from "lucide-react";
+import { ListCollapse, Send, Menu, Download, Copy, Check, LogOut, User, Square, X, Sparkles, Zap, Clock, ExternalLink, Search, Trash2, CheckCircle2 } from "lucide-react";
 import api from "../services/api.js";
+import toast from "react-hot-toast";
 
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -14,12 +15,18 @@ const Dashboard = () => {
   const [history, setHistory] = useState([]);
   const [user, setUser] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredHistory, setFilteredHistory] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(null);
   const abortControllerRef = useRef(null);
 
-  // Show notification helper
+  // Show notification helper (using toast)
   const showNotification = (message, type = "success") => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
+    if (type === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
   };
 
   // Fetch user profile and history on mount
@@ -62,10 +69,51 @@ const Dashboard = () => {
     try {
       const response = await api.get("/summary/history");
       if (response.data.success) {
-        setHistory(response.data.summaries || []);
+        const summaries = response.data.summaries || response.data.data || [];
+        setHistory(summaries);
+        setFilteredHistory(summaries);
       }
     } catch (error) {
       console.error("Error fetching history:", error);
+      toast.error("Failed to load history");
+    }
+  };
+
+  // Filter history based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredHistory(history);
+    } else {
+      const filtered = history.filter(item => 
+        (item.video_title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.summary || '').toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredHistory(filtered);
+    }
+  }, [searchQuery, history]);
+
+  const handleDeleteSummary = async (summaryId, e) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this summary?")) {
+      return;
+    }
+
+    setIsDeleting(summaryId);
+    try {
+      await api.delete(`/summary/${summaryId}`);
+      toast.success("Summary deleted successfully");
+      fetchHistory();
+      // If deleted summary is currently displayed, clear it
+      if (summary?.id === summaryId) {
+        setSummary(null);
+        setDisplayedText("");
+        setIsGenerating(false);
+      }
+    } catch (error) {
+      toast.error("Failed to delete summary");
+      console.error("Delete error:", error);
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -191,15 +239,7 @@ const Dashboard = () => {
 
   return (
     <div className="h-screen w-screen flex bg-[#181818] text-white overflow-hidden">
-      {/* Notification Toast */}
-      {notification && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg animate-fade-in ${notification.type === "error"
-            ? "bg-red-600 text-white"
-            : "bg-green-600 text-white"
-          }`}>
-          {notification.message}
-        </div>
-      )}
+      {/* Notification Toast - Using react-hot-toast instead */}
 
       {/* LEFT SIDEBAR */}
       <div
@@ -254,23 +294,81 @@ const Dashboard = () => {
 
               {/* History */}
               <div className="bg-[#181818] rounded-lg p-4">
-                <h3 className="font-semibold text-lg mb-3">Your History</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-lg">Your History</h3>
+                  {history.length > 0 && (
+                    <span className="text-xs text-gray-400 bg-[#282828] px-2 py-1 rounded">
+                      {history.length}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Search */}
+                {history.length > 0 && (
+                  <div className="mb-3 relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search..."
+                      className="w-full bg-[#282828] text-white text-sm px-8 py-2 rounded-lg border border-gray-700 focus:border-cyan-500 focus:outline-none"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {history.length > 0 ? (
-                    history.slice(0, 10).map((item) => (
+                  {filteredHistory.length > 0 ? (
+                    filteredHistory.slice(0, 10).map((item) => (
                       <div
                         key={item.id}
                         onClick={() => loadHistoryItem(item.id)}
-                        className="hover:bg-[#282828] p-2 rounded cursor-pointer transition-colors"
+                        className="group hover:bg-[#282828] p-2 rounded cursor-pointer transition-colors relative"
                       >
-                        <p className="text-sm truncate">{item.video_title || "Untitled"}</p>
-                        <p className="text-xs text-gray-400">
-                          {new Date(item.created_at).toLocaleDateString()}
-                        </p>
+                        <div className="flex items-start gap-2">
+                          {item.thumbnail && (
+                            <img
+                              src={item.thumbnail}
+                              alt={item.video_title}
+                              className="w-12 h-8 object-cover rounded flex-shrink-0"
+                              onError={(e) => {
+                                e.target.style.display = "none";
+                              }}
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm truncate font-medium">{item.video_title || "Untitled"}</p>
+                            <p className="text-xs text-gray-400">
+                              {new Date(item.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => handleDeleteSummary(item.id, e)}
+                          disabled={isDeleting === item.id}
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 hover:bg-red-600 rounded transition-all"
+                          title="Delete summary"
+                        >
+                          {isDeleting === item.id ? (
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 size={14} className="text-gray-400 hover:text-white" />
+                          )}
+                        </button>
                       </div>
                     ))
+                  ) : searchQuery ? (
+                    <p className="text-sm text-gray-400 text-center py-4">No results found</p>
                   ) : (
-                    <p className="text-sm text-gray-400">No history yet</p>
+                    <p className="text-sm text-gray-400 text-center py-4">No history yet</p>
                   )}
                 </div>
               </div>
@@ -400,78 +498,118 @@ const Dashboard = () => {
                 )}
 
                 {summary && (
-                  <div className="bg-[#202124] rounded-lg p-6 space-y-4 shadow-xl border border-gray-700">
+                  <div className="bg-[#202124] rounded-xl p-5 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 shadow-xl border border-gray-700 animate-slideDown">
                     {/* Video Info */}
-                    <div className="flex items-start gap-4 pb-4 border-b border-gray-700">
+                    <div className="flex flex-col sm:flex-row items-start gap-4 pb-4 sm:pb-6 border-b border-gray-700">
                       {summary.thumbnail && (
-                        <img
-                          src={summary.thumbnail}
-                          alt={summary.video_title}
-                          className="w-40 h-24 object-cover rounded-lg flex-shrink-0"
-                          onError={(e) => {
-                            e.target.style.display = "none";
-                          }}
-                        />
+                        <div className="relative group cursor-pointer" onClick={() => summary.video_url && window.open(summary.video_url, '_blank')}>
+                          <img
+                            src={summary.thumbnail}
+                            alt={summary.video_title}
+                            className="w-full sm:w-40 md:w-48 h-32 sm:h-36 object-cover rounded-lg flex-shrink-0 transition-transform group-hover:scale-105"
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                            <ExternalLink className="w-5 h-5 text-white" />
+                          </div>
+                        </div>
                       )}
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold mb-2">{summary.video_title}</h3>
-                        <div className="flex gap-4 text-sm text-gray-400">
+                      <div className="flex-1 min-w-0 w-full sm:w-auto">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold break-words flex-1">{summary.video_title}</h3>
+                          {summary.video_url && (
+                            <button
+                              onClick={() => window.open(summary.video_url, '_blank')}
+                              className="p-2 hover:bg-[#181818] rounded-lg transition-colors flex-shrink-0"
+                              title="Open video"
+                            >
+                              <ExternalLink size={18} className="text-gray-400 hover:text-cyan-400" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-400">
                           {summary.duration && (
-                            <>
-                              <span>Duration: {Math.floor(summary.duration / 60)}:{String(summary.duration % 60).padStart(2, '0')}</span>
-                              <span>•</span>
-                            </>
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              <span>{Math.floor(summary.duration / 60)}:{String(summary.duration % 60).padStart(2, '0')}</span>
+                            </div>
                           )}
                           {summary.processing_time && (
-                            <span>Processed in {summary.processing_time}s</span>
+                            <>
+                              <span className="hidden sm:inline">•</span>
+                              <div className="flex items-center gap-1">
+                                <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                <span>{summary.processing_time}s</span>
+                              </div>
+                            </>
+                          )}
+                          {summary.transcript_length && (
+                            <>
+                              <span className="hidden sm:inline">•</span>
+                              <span>{summary.transcript_length.toLocaleString()} chars</span>
+                            </>
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={handleCopy}
                           className="p-2 hover:bg-[#181818] rounded-lg transition-colors border border-gray-700"
                           title="Copy summary"
                         >
-                          {copied ? <Check size={20} className="text-green-500" /> : <Copy size={20} />}
+                          {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
                         </button>
                         <button
                           onClick={handleDownload}
                           className="p-2 hover:bg-[#181818] rounded-lg transition-colors border border-gray-700"
                           title="Download summary"
                         >
-                          <Download size={20} />
+                          <Download size={18} />
                         </button>
                       </div>
                     </div>
 
                     {/* Summary Content */}
                     <div>
-                      <h4 className="text-lg font-semibold mb-3 text-cyan-400">Summary:</h4>
-                      <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-base">
-                        {displayedText}
-                        {isGenerating && (
-                          <span className="inline-block w-2 h-5 bg-cyan-400 ml-1 animate-pulse" />
-                        )}
-                      </p>
+                      <h4 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-cyan-400 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                        AI Summary
+                      </h4>
+                      <div className="bg-[#181818] rounded-lg p-4 sm:p-5 border border-gray-700">
+                        <p className="text-sm sm:text-base text-gray-300 leading-relaxed whitespace-pre-wrap break-words">
+                          {displayedText}
+                          {isGenerating && (
+                            <span className="inline-block w-2 h-5 bg-cyan-400 ml-1 animate-pulse" />
+                          )}
+                        </p>
+                      </div>
                       {isGenerating && (
-                        <div className="mt-3">
+                        <div className="mt-3 flex items-center justify-between">
                           <button
                             onClick={stopGeneration}
-                            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md transition-all"
+                            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md transition-all text-sm"
                             title="Stop streaming"
                           >
                             <Square size={16} />
-                            <span className="text-sm">Stop</span>
+                            <span>Stop</span>
                           </button>
+                          <span className="text-xs text-gray-500">Streaming summary...</span>
                         </div>
                       )}
                     </div>
 
                     {/* Footer Info */}
-                    {!isGenerating && summary.transcript_length && (
-                      <div className="flex items-center justify-between text-sm text-gray-400 border-t border-gray-700 pt-4">
-                        <span>Transcript length: {summary.transcript_length.toLocaleString()} characters</span>
+                    {!isGenerating && (
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm text-gray-400 border-t border-gray-700 pt-4">
+                        <span className="flex items-center gap-1">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          Summary generated successfully
+                        </span>
+                        {summary.transcript_length && (
+                          <span>Transcript: {summary.transcript_length.toLocaleString()} characters</span>
+                        )}
                       </div>
                     )}
                   </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ListCollapse, Send, X, Menu, Sparkles, Zap, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { ListCollapse, Send, X, Menu, Sparkles, Zap, Clock, CheckCircle2, AlertCircle, Loader2, Copy, Check, ExternalLink } from "lucide-react";
 import logo from "../assets/logo.png";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
@@ -513,7 +513,7 @@ const TypingAnimation = ({ text, onComplete }) => {
   );
 };
 
-// Progress steps component for generation process
+// Progress steps component for generation process (responsive)
 const GenerationSteps = ({ currentStep }) => {
   const steps = [
     { id: 1, label: "Fetching video", icon: "📹" },
@@ -523,21 +523,28 @@ const GenerationSteps = ({ currentStep }) => {
   ];
 
   return (
-    <div className="flex items-center justify-center gap-4 py-8">
+    <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 py-6 sm:py-8 px-2">
       {steps.map((step, index) => (
-        <div key={step.id} className="flex items-center gap-2">
-          <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all duration-500 ${
-              currentStep >= step.id
-                ? "bg-gradient-to-br from-emerald-400 to-blue-500 text-white scale-110 shadow-lg"
-                : "bg-gray-200 text-gray-400"
-            }`}
-          >
-            {currentStep >= step.id ? "✓" : step.icon}
+        <div key={step.id} className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+          <div className="flex flex-col items-center">
+            <div
+              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-lg sm:text-xl transition-all duration-500 ${
+                currentStep >= step.id
+                  ? "bg-gradient-to-br from-emerald-400 to-blue-500 text-white scale-110 shadow-lg"
+                  : "bg-gray-200 text-gray-400"
+              }`}
+            >
+              {currentStep >= step.id ? "✓" : step.icon}
+            </div>
+            <span className={`text-xs sm:text-sm mt-1 sm:mt-2 text-center max-w-[60px] sm:max-w-none ${
+              currentStep >= step.id ? "text-gray-800 font-medium" : "text-gray-500"
+            }`}>
+              {step.label}
+            </span>
           </div>
           {index < steps.length - 1 && (
             <div
-              className={`w-16 h-1 transition-all duration-500 ${
+              className={`hidden sm:block w-8 md:w-12 lg:w-16 h-1 transition-all duration-500 ${
                 currentStep > step.id ? "bg-gradient-to-r from-emerald-400 to-blue-500" : "bg-gray-200"
               }`}
             />
@@ -559,6 +566,7 @@ const TryBoard = () => {
   const [error, setError] = useState(null);
   const [generationStep, setGenerationStep] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
+  const [copied, setCopied] = useState(false);
   const summaryRef = useRef(null);
 
   // Fetch guest status on component mount and after each summary
@@ -651,29 +659,54 @@ const TryBoard = () => {
 
   const trialPercentage = (triesLeft / 3) * 100;
 
+  const handleCopySummary = () => {
+    if (summary?.summary) {
+      navigator.clipboard.writeText(summary.summary);
+      setCopied(true);
+      toast.success("Summary copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleOpenVideo = () => {
+    if (summary?.video_url) {
+      window.open(summary.video_url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <>
-      <div className="min-h-screen w-full bg-[var(--bg-main)] flex overflow-hidden">
-        {/* LEFT SIDEBAR */}
+      <div className="min-h-screen w-full bg-[var(--bg-main)] flex flex-col md:flex-row overflow-hidden">
+        {/* LEFT SIDEBAR - Hidden on mobile, overlay on tablet, sidebar on desktop */}
         <div
-          className={`left-section h-screen bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 ease-in-out ${
-            isSidebarOpen ? "w-80" : "w-0 md:w-20"
-          } overflow-hidden shadow-sm`}
+          className={`left-section h-auto md:h-screen bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 ease-in-out ${
+            isSidebarOpen 
+              ? "w-full md:w-80 fixed md:relative z-40 md:z-auto" 
+              : "w-0 md:w-20 hidden md:block"
+          } overflow-hidden shadow-sm md:shadow-none`}
         >
-          <div className={`h-full ${isSidebarOpen ? "p-6" : "p-3"}`}>
+          <div className={`h-full ${isSidebarOpen ? "p-4 sm:p-6" : "p-3"}`}>
             {/* Logo and Toggle */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6 md:mb-8">
               {isSidebarOpen ? (
                 <>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
-                      <img src={logo} alt="Summtube logo" className="w-8 h-8" />
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
+                      <img src={logo} alt="Summtube logo" className="w-6 h-6 sm:w-8 sm:h-8" />
                     </div>
-                    <span className="font-bold text-lg">SummTube</span>
+                    <span className="font-bold text-base sm:text-lg">SummTube</span>
                   </div>
                   <button
                     onClick={() => setIsSidebarOpen(false)}
-                    className="hover:bg-gray-100 p-2 rounded-lg transition-colors"
+                    className="hover:bg-gray-100 p-1.5 sm:p-2 rounded-lg transition-colors md:hidden"
+                    aria-label="Close sidebar"
+                  >
+                    <X size={20} className="text-gray-600" />
+                  </button>
+                  <button
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="hidden md:block hover:bg-gray-100 p-2 rounded-lg transition-colors"
+                    aria-label="Collapse sidebar"
                   >
                     <ListCollapse size={20} className="text-gray-600" />
                   </button>
@@ -682,6 +715,7 @@ const TryBoard = () => {
                 <button
                   onClick={() => setIsSidebarOpen(true)}
                   className="w-full flex justify-center hover:bg-gray-100 p-2 rounded-lg transition-colors"
+                  aria-label="Open sidebar"
                 >
                   <Menu size={24} className="text-gray-600" />
                 </button>
@@ -690,23 +724,23 @@ const TryBoard = () => {
 
             {/* Guest Trial Info */}
             {isSidebarOpen && (
-              <div className="space-y-4">
-                <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-5 border border-emerald-100">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-4 sm:p-5 border border-emerald-100">
                   <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-5 h-5 text-emerald-600" />
-                    <h3 className="font-semibold text-lg text-gray-800">Free Trial</h3>
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 flex-shrink-0" />
+                    <h3 className="font-semibold text-base sm:text-lg text-gray-800">Free Trial</h3>
                   </div>
                   
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-600">Tries remaining</span>
-                      <span className={`font-bold text-2xl ${triesLeft === 0 ? "text-red-500" : triesLeft === 1 ? "text-orange-500" : "text-emerald-600"}`}>
+                      <span className="text-xs sm:text-sm text-gray-600">Tries remaining</span>
+                      <span className={`font-bold text-xl sm:text-2xl ${triesLeft === 0 ? "text-red-500" : triesLeft === 1 ? "text-orange-500" : "text-emerald-600"}`}>
                         {triesLeft}
                       </span>
                     </div>
                     
                     {/* Progress Bar */}
-                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 sm:h-3 overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ease-out ${
                           triesLeft === 0
@@ -730,45 +764,62 @@ const TryBoard = () => {
 
                   <button
                     onClick={() => setIsLoginOpen(true)}
-                    className="w-full bg-black text-white py-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-sm"
+                    className="w-full bg-black text-white py-2 sm:py-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-xs sm:text-sm"
                   >
                     Login for Unlimited Access
                   </button>
                 </div>
 
                 {/* Benefits Card */}
-                <div className="bg-white border border-gray-200 rounded-xl p-5">
-                  <h4 className="font-semibold mb-3 text-sm text-gray-800">Why Login?</h4>
-                  <ul className="space-y-2 text-xs text-gray-600">
+                <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
+                  <h4 className="font-semibold mb-3 text-xs sm:text-sm text-gray-800">Why Login?</h4>
+                  <ul className="space-y-1.5 sm:space-y-2 text-xs text-gray-600">
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      Unlimited summaries
+                      <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
+                      <span>Unlimited summaries</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      Save your history
+                      <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
+                      <span>Save your history</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      Download summaries
+                      <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
+                      <span>Download summaries</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      Priority support
+                      <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
+                      <span>Priority support</span>
                     </li>
                   </ul>
                 </div>
               </div>
             )}
+            
+            {/* Mobile backdrop overlay */}
+            {isSidebarOpen && (
+              <div 
+                className="fixed inset-0 bg-black/50 z-30 md:hidden"
+                onClick={() => setIsSidebarOpen(false)}
+                aria-hidden="true"
+              />
+            )}
           </div>
         </div>
 
         {/* MAIN CONTENT */}
-        <div className="flex-1 h-screen flex flex-col overflow-hidden bg-[var(--bg-main)]">
+        <div className="flex-1 min-h-screen md:h-screen flex flex-col overflow-hidden bg-[var(--bg-main)]">
           {/* Top Navigation */}
-          <div className="top-section py-4 px-6 lg:px-10 flex items-center justify-between border-b border-gray-200 bg-white flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+          <div className="top-section py-3 sm:py-4 px-4 sm:px-6 lg:px-10 flex items-center justify-between border-b border-gray-200 bg-white flex-shrink-0 sticky top-0 z-30">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Open menu"
+              >
+                <Menu size={20} className="text-gray-600" />
+              </button>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
                 SummTube
               </h1>
             </div>
@@ -781,7 +832,7 @@ const TryBoard = () => {
             <div className="md:hidden">
               <button
                 onClick={() => setIsLoginOpen(true)}
-                className="px-4 py-2 bg-black text-white rounded-lg text-sm hover:bg-gray-800 transition"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-black text-white rounded-lg text-xs sm:text-sm hover:bg-gray-800 transition whitespace-nowrap"
               >
                 Login
               </button>
@@ -789,26 +840,26 @@ const TryBoard = () => {
           </div>
 
           {/* Main Content Area */}
-          <div className="flex-1 overflow-y-auto p-6 lg:p-10">
-            <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 xl:p-10">
+            <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
               {/* Welcome Card */}
-              <div className="bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 rounded-2xl p-8 border border-emerald-100 shadow-sm">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Zap className="w-6 h-6 text-white" />
+              <div className="bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 rounded-xl sm:rounded-2xl p-5 sm:p-6 lg:p-8 border border-emerald-100 shadow-sm">
+                <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 mb-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-2xl lg:text-3xl font-bold mb-2 text-gray-800">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 text-gray-800">
                       Try SummTube Free
                     </h2>
-                    <p className="text-gray-600 leading-relaxed">
+                    <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                       Paste a YouTube link below to get an AI-generated summary. Experience the power of AI-powered video summarization.
                     </p>
                   </div>
                 </div>
                 
-                <div className="mt-4 flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-gray-500" />
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
                   <span className="text-gray-600">
                     You have{" "}
                     <span className={`font-bold ${triesLeft === 0 ? "text-red-500" : triesLeft === 1 ? "text-orange-500" : "text-emerald-600"}`}>
@@ -821,12 +872,14 @@ const TryBoard = () => {
 
               {/* Generation Steps (shown during loading) */}
               {isLoading && (
-                <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm animate-slideDown">
-                  <h3 className="text-lg font-semibold mb-6 text-center text-gray-800">
+                <div className="bg-white rounded-xl sm:rounded-2xl p-5 sm:p-6 lg:p-8 border border-gray-200 shadow-sm animate-slideDown">
+                  <h3 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-center text-gray-800">
                     Generating your summary...
                   </h3>
-                  <GenerationSteps currentStep={generationStep} />
-                  <p className="text-center text-sm text-gray-500 mt-4">
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <GenerationSteps currentStep={generationStep} />
+                  </div>
+                  <p className="text-center text-xs sm:text-sm text-gray-500 mt-3 sm:mt-4">
                     This may take 15-30 seconds
                   </p>
                 </div>
@@ -834,12 +887,12 @@ const TryBoard = () => {
 
               {/* Error Display */}
               {error && !isLoading && (
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-6 animate-slideDown">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-semibold text-red-800 mb-1">Error</h4>
-                      <p className="text-red-700 text-sm">{error}</p>
+                <div className="bg-red-50 border border-red-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 animate-slideDown">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-semibold text-sm sm:text-base text-red-800 mb-1">Error</h4>
+                      <p className="text-xs sm:text-sm text-red-700 break-words">{error}</p>
                     </div>
                   </div>
                 </div>
@@ -849,29 +902,58 @@ const TryBoard = () => {
               {summary && !isLoading && (
                 <div
                   ref={summaryRef}
-                  className="bg-white rounded-2xl p-8 border border-gray-200 shadow-lg animate-slideDown space-y-6"
+                  className="bg-white rounded-xl sm:rounded-2xl p-5 sm:p-6 lg:p-8 border border-gray-200 shadow-lg animate-slideDown space-y-4 sm:space-y-6"
                 >
                   {/* Video Header */}
-                  <div className="flex flex-col sm:flex-row gap-4 pb-6 border-b border-gray-200">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-gray-200">
                     {summary.thumbnail && (
-                      <img
-                        src={summary.thumbnail}
-                        alt={summary.video_title}
-                        className="w-full sm:w-48 h-32 object-cover rounded-xl flex-shrink-0"
-                      />
+                      <div className="relative group cursor-pointer" onClick={handleOpenVideo}>
+                        <img
+                          src={summary.thumbnail}
+                          alt={summary.video_title}
+                          className="w-full sm:w-40 md:w-48 h-24 sm:h-32 object-cover rounded-lg sm:rounded-xl flex-shrink-0 transition-transform group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg sm:rounded-xl flex items-center justify-center">
+                          <ExternalLink className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
                     )}
-                    <div className="flex-1">
-                      <h3 className="text-xl lg:text-2xl font-bold mb-2 text-gray-800">
-                        {summary.video_title}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 break-words flex-1">
+                          {summary.video_title}
+                        </h3>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={handleCopySummary}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors group"
+                            title="Copy summary"
+                          >
+                            {copied ? (
+                              <Check className="w-4 h-4 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-4 h-4 text-gray-600 group-hover:text-gray-800" />
+                            )}
+                          </button>
+                          {summary.video_url && (
+                            <button
+                              onClick={handleOpenVideo}
+                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                              title="Open video"
+                            >
+                              <ExternalLink className="w-4 h-4 text-gray-600 hover:text-gray-800" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600">
                         <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {Math.floor(summary.duration / 60)}:{String(summary.duration % 60).padStart(2, '0')}
+                          <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span>{Math.floor(summary.duration / 60)}:{String(summary.duration % 60).padStart(2, '0')}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Zap className="w-4 h-4" />
-                          {summary.processing_time}s
+                          <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                          <span>{summary.processing_time}s</span>
                         </div>
                         <div className="text-gray-500">
                           {summary.transcript_length?.toLocaleString()} chars
@@ -882,20 +964,20 @@ const TryBoard = () => {
 
                   {/* Summary Content */}
                   <div>
-                    <h4 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-emerald-500" />
+                    <h4 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-gray-800 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500 flex-shrink-0" />
                       AI Summary
                     </h4>
                     <div className="prose prose-sm max-w-none">
                       {isTyping ? (
-                        <div className="text-gray-700 leading-relaxed min-h-[200px]">
+                        <div className="text-sm sm:text-base text-gray-700 leading-relaxed min-h-[150px] sm:min-h-[200px]">
                           <TypingAnimation
                             text={summary.summary}
                             onComplete={() => setIsTyping(false)}
                           />
                         </div>
                       ) : (
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                        <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
                           {summary.summary}
                         </p>
                       )}
@@ -903,10 +985,10 @@ const TryBoard = () => {
                   </div>
 
                   {/* Footer Stats */}
-                  <div className="pt-6 border-t border-gray-200 flex items-center justify-between text-sm text-gray-500">
+                  <div className="pt-4 sm:pt-6 border-t border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm text-gray-500">
                     <span>Summary generated successfully</span>
                     <span className="flex items-center gap-1">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
                       Complete
                     </span>
                   </div>
@@ -916,10 +998,10 @@ const TryBoard = () => {
           </div>
 
           {/* Bottom Input Section - Fixed */}
-          <div className="bottom-section p-6 border-t border-gray-200 bg-white flex-shrink-0">
+          <div className="bottom-section p-4 sm:p-6 border-t border-gray-200 bg-white flex-shrink-0 sticky bottom-0 z-20">
             <div className="max-w-4xl mx-auto">
               <div className="relative">
-                <div className="flex items-center gap-3 bg-gray-50 rounded-2xl py-3 px-5 border border-gray-200 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-100 transition-all">
+                <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 rounded-xl sm:rounded-2xl py-2.5 sm:py-3 px-3 sm:px-5 border border-gray-200 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-100 transition-all">
                   <input
                     type="text"
                     value={link}
@@ -930,28 +1012,29 @@ const TryBoard = () => {
                       }
                     }}
                     placeholder="Paste YouTube link here..."
-                    className="flex-1 bg-transparent outline-none text-gray-800 placeholder-gray-400 text-base"
+                    className="flex-1 bg-transparent outline-none text-gray-800 placeholder-gray-400 text-sm sm:text-base min-w-0"
                     disabled={isLoading || triesLeft <= 0}
                   />
                   <button
                     type="button"
                     onClick={handleSubmit}
                     disabled={isLoading || triesLeft <= 0 || !link.trim()}
-                    className={`p-3 rounded-xl transition-all ${
+                    className={`p-2.5 sm:p-3 rounded-lg sm:rounded-xl transition-all flex-shrink-0 ${
                       isLoading || triesLeft <= 0 || !link.trim()
                         ? "bg-gray-300 cursor-not-allowed"
-                        : "bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+                        : "bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl active:scale-95"
                     }`}
+                    aria-label="Generate summary"
                   >
                     {isLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                     ) : (
-                      <Send className="w-5 h-5" />
+                      <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                   </button>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-3 text-center">
+              <p className="text-xs sm:text-sm text-gray-500 mt-2 sm:mt-3 text-center px-2">
                 {triesLeft <= 0
                   ? "You've used all free trials. Login for unlimited access!"
                   : "Supported: YouTube video links with captions"}
