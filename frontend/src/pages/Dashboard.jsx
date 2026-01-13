@@ -19,6 +19,7 @@ const Dashboard = () => {
   const [filteredHistory, setFilteredHistory] = useState([]);
   const [isDeleting, setIsDeleting] = useState(null);
   const abortControllerRef = useRef(null);
+  const welcomedRef = useRef(false);
 
   // Show notification helper (using toast)
   const showNotification = (message, type = "success") => {
@@ -59,6 +60,12 @@ const Dashboard = () => {
     checkAuthAndFetch();
   }, []);
 
+  useEffect(() => {
+    if (user && !welcomedRef.current) {
+      toast.success(`Welcome, ${user.name}!`);
+      welcomedRef.current = true;
+    }
+  }, [user]);
   // Simulate streaming text effect (only for newly generated summaries)
   useEffect(() => {
     if (summary?.summary && isGenerating) {
@@ -324,8 +331,8 @@ const Dashboard = () => {
       <div
         className={`h-auto md:h-screen bg-[#202124] flex-shrink-0 transition-all duration-300 ease-in-out ${
           isSidebarOpen 
-            ? "w-full md:w-64 fixed md:relative z-40 md:z-auto" 
-            : "w-0 md:w-16 hidden md:block"
+            ? "w-full md:w-64 md:sticky md:top-0 md:self-start z-40 md:z-10" 
+            : "w-0 md:w-16 hidden md:block md:sticky md:top-0 md:self-start"
         } overflow-hidden`}
       >
         <div className={`h-full flex flex-col ${isSidebarOpen ? "p-4 sm:p-5" : "p-2 md:p-3"}`}>
@@ -502,7 +509,7 @@ const Dashboard = () => {
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="flex-1 min-h-screen md:h-full flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-screen md:h-full flex flex-col overflow-hidden md:overflow-y-auto">
         {/* Top Navigation */}
         <div className="py-3 px-4 sm:py-4 sm:px-6 lg:px-10 flex items-center justify-between border-b border-gray-700 flex-shrink-0 bg-[#202124] sticky top-0 z-30">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -534,7 +541,7 @@ const Dashboard = () => {
               <div className="w-full max-w-3xl">
                 <div className="text-center mb-6 sm:mb-8">
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                    Welcome to SummTube
+                    {user ? `Welcome, ${user.name}` : "Welcome to SummTube"}
                   </h2>
                   <p className="text-gray-400 text-sm sm:text-base md:text-lg">
                     Paste a YouTube link to get an AI-generated summary

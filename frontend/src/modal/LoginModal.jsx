@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import api from "../services/api";
 import logo from "../assets/logo.png";
 
@@ -134,7 +135,7 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
   /* ---------------- Google Login Callback ---------------- */
   const handleGoogleResponse = async (response) => {
     if (!response.credential) {
-      alert("Google sign-in failed. No credential received.");
+      toast.error("Google sign-in failed. No credential received.");
       return;
     }
 
@@ -149,8 +150,7 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
     );
 
       if (result.data.success && result.data.user) {
-        // Show success message
-        alert(`Welcome, ${result.data.user.name}!`);
+        toast.success(`Welcome, ${result.data.user.name}!`);
 
         // Close modal
         onClose();
@@ -167,7 +167,7 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
         err.message ||
         "Google login failed. Please try again.";
 
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -178,7 +178,7 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
     e.preventDefault();
 
     if (!email || !password) {
-      alert("Please fill in all fields");
+      toast.error("Please fill in all fields");
       return;
     }
 
@@ -191,7 +191,7 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
       });
 
       if (result.data.success && result.data.user) {
-        alert(`Welcome back, ${result.data.user.name}!`);
+        toast.success(`Welcome back, ${result.data.user.name}!`);
         onClose();
         navigate("/dashboard");
       } else {
@@ -204,7 +204,7 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
         err.message ||
         "Login failed. Please check your credentials.";
 
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

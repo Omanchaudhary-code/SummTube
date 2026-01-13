@@ -46,15 +46,17 @@ COPY --from=builder /root/.local /home/appuser/.local
 COPY --chown=appuser:appuser . .
 
 # =========================
-# Render dynamic PORT support
+# Render dynamic PORT support (with safe default for build time)
 # =========================
+ARG PORT=8001
+ENV PORT=${PORT}
 EXPOSE ${PORT}
 
 # Healthcheck (Render-safe)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:${PORT}/api/v1/health || exit 1
+    CMD curl -f http://localhost:${PORT:-8001}/api/v1/health || exit 1
 
 # =========================
 # Start app (production)
 # =========================
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT} --workers ${WORKERS:-2} --no-access-log --log-level info"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8001} --workers ${WORKERS:-2} --no-access-log --log-level info"]
