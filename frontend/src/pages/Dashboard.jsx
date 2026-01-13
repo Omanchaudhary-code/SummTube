@@ -31,8 +31,32 @@ const Dashboard = () => {
 
   // Fetch user profile and history on mount
   useEffect(() => {
-    fetchUserProfile();
-    fetchHistory();
+    const checkAuthAndFetch = async () => {
+      try {
+        // First check if user is authenticated
+        const profileResponse = await api.get("/user/profile");
+        if (profileResponse.data.success && profileResponse.data.user) {
+          setUser(profileResponse.data.user);
+          // Only fetch history if user is authenticated
+          await fetchHistory();
+        } else {
+          // Not authenticated - redirect to homepage
+          toast.error("Please login to access dashboard");
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 1000);
+        }
+      } catch (error) {
+        // Not authenticated - redirect to homepage
+        console.error("Auth check failed:", error);
+        toast.error("Please login to access dashboard");
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1000);
+      }
+    };
+
+    checkAuthAndFetch();
   }, []);
 
   // Simulate streaming text effect
@@ -75,7 +99,15 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error("Error fetching history:", error);
-      toast.error("Failed to load history");
+      // If 401, user is not authenticated
+      if (error.response?.status === 401) {
+        toast.error("Please login to view history");
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1000);
+      } else {
+        toast.error("Failed to load history");
+      }
     }
   };
 
@@ -238,28 +270,39 @@ const Dashboard = () => {
   const hasStartedGeneration = summary || isLoading || error;
 
   return (
-    <div className="h-screen w-screen flex bg-[#181818] text-white overflow-hidden">
+    <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#181818] text-white overflow-hidden">
       {/* Notification Toast - Using react-hot-toast instead */}
 
-      {/* LEFT SIDEBAR */}
+      {/* LEFT SIDEBAR - Responsive */}
       <div
-        className={`h-full bg-[#202124] flex-shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? "w-64" : "w-0 md:w-16"
-          } overflow-hidden`}
+        className={`h-auto md:h-screen bg-[#202124] flex-shrink-0 transition-all duration-300 ease-in-out ${
+          isSidebarOpen 
+            ? "w-full md:w-64 fixed md:relative z-40 md:z-auto" 
+            : "w-0 md:w-16 hidden md:block"
+        } overflow-hidden`}
       >
-        <div className={`h-full flex flex-col ${isSidebarOpen ? "p-5" : "p-2 md:p-3"}`}>
+        <div className={`h-full flex flex-col ${isSidebarOpen ? "p-4 sm:p-5" : "p-2 md:p-3"}`}>
           {/* Logo and Toggle */}
-          <div className="flex items-center justify-between mb-8 flex-shrink-0">
+          <div className="flex items-center justify-between mb-6 md:mb-8 flex-shrink-0">
             {isSidebarOpen ? (
               <>
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-xl">ST</span>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-base sm:text-xl">ST</span>
                   </div>
-                  <span className="font-semibold text-lg">SummTube</span>
+                  <span className="font-semibold text-base sm:text-lg">SummTube</span>
                 </div>
                 <button
                   onClick={() => setIsSidebarOpen(false)}
-                  className="hover:bg-[#181818] p-1 rounded transition-colors"
+                  className="hover:bg-[#181818] p-1.5 sm:p-2 rounded transition-colors md:hidden"
+                  aria-label="Close sidebar"
+                >
+                  <X size={20} />
+                </button>
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="hidden md:block hover:bg-[#181818] p-1 rounded transition-colors"
+                  aria-label="Collapse sidebar"
                 >
                   <ListCollapse size={24} />
                 </button>
@@ -268,24 +311,34 @@ const Dashboard = () => {
               <button
                 onClick={() => setIsSidebarOpen(true)}
                 className="w-full flex justify-center hover:bg-[#181818] p-2 rounded transition-colors"
+                aria-label="Open sidebar"
               >
                 <Menu size={24} />
               </button>
             )}
           </div>
+          
+          {/* Mobile backdrop overlay */}
+          {isSidebarOpen && (
+            <div 
+              className="fixed inset-0 bg-black/50 z-30 md:hidden"
+              onClick={() => setIsSidebarOpen(false)}
+              aria-hidden="true"
+            />
+          )}
 
           {/* Sidebar Content */}
           {isSidebarOpen && (
-            <div className="flex-1 overflow-y-auto space-y-4">
+            <div className="flex-1 overflow-y-auto space-y-3 sm:space-y-4">
               {/* User Info */}
               {user && (
-                <div className="bg-[#181818] rounded-lg p-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
-                      <User size={20} />
+                <div className="bg-[#181818] rounded-lg p-3 sm:p-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User size={16} className="sm:w-5 sm:h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{user.name}</p>
+                      <p className="font-semibold text-sm sm:text-base truncate">{user.name}</p>
                       <p className="text-xs text-gray-400 truncate">{user.email}</p>
                     </div>
                   </div>
@@ -293,9 +346,9 @@ const Dashboard = () => {
               )}
 
               {/* History */}
-              <div className="bg-[#181818] rounded-lg p-4">
+              <div className="bg-[#181818] rounded-lg p-3 sm:p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-lg">Your History</h3>
+                  <h3 className="font-semibold text-base sm:text-lg">Your History</h3>
                   {history.length > 0 && (
                     <span className="text-xs text-gray-400 bg-[#282828] px-2 py-1 rounded">
                       {history.length}
@@ -306,26 +359,26 @@ const Dashboard = () => {
                 {/* Search */}
                 {history.length > 0 && (
                   <div className="mb-3 relative">
-                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search..."
-                      className="w-full bg-[#282828] text-white text-sm px-8 py-2 rounded-lg border border-gray-700 focus:border-cyan-500 focus:outline-none"
+                      className="w-full bg-[#282828] text-white text-xs sm:text-sm px-7 sm:px-8 py-1.5 sm:py-2 rounded-lg border border-gray-700 focus:border-cyan-500 focus:outline-none"
                     />
                     {searchQuery && (
                       <button
                         onClick={() => setSearchQuery("")}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
                       >
-                        <X size={16} />
+                        <X size={14} className="sm:w-4 sm:h-4" />
                       </button>
                     )}
                   </div>
                 )}
 
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-48 sm:max-h-64 overflow-y-auto">
                   {filteredHistory.length > 0 ? (
                     filteredHistory.slice(0, 10).map((item) => (
                       <div
@@ -338,14 +391,14 @@ const Dashboard = () => {
                             <img
                               src={item.thumbnail}
                               alt={item.video_title}
-                              className="w-12 h-8 object-cover rounded flex-shrink-0"
+                              className="w-10 h-7 sm:w-12 sm:h-8 object-cover rounded flex-shrink-0"
                               onError={(e) => {
                                 e.target.style.display = "none";
                               }}
                             />
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm truncate font-medium">{item.video_title || "Untitled"}</p>
+                            <p className="text-xs sm:text-sm truncate font-medium">{item.video_title || "Untitled"}</p>
                             <p className="text-xs text-gray-400">
                               {new Date(item.created_at).toLocaleDateString()}
                             </p>
@@ -360,23 +413,23 @@ const Dashboard = () => {
                           {isDeleting === item.id ? (
                             <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           ) : (
-                            <Trash2 size={14} className="text-gray-400 hover:text-white" />
+                            <Trash2 size={12} className="sm:w-3.5 sm:h-3.5 text-gray-400 hover:text-white" />
                           )}
                         </button>
                       </div>
                     ))
                   ) : searchQuery ? (
-                    <p className="text-sm text-gray-400 text-center py-4">No results found</p>
+                    <p className="text-xs sm:text-sm text-gray-400 text-center py-4">No results found</p>
                   ) : (
-                    <p className="text-sm text-gray-400 text-center py-4">No history yet</p>
+                    <p className="text-xs sm:text-sm text-gray-400 text-center py-4">No history yet</p>
                   )}
                 </div>
               </div>
 
               {/* Features */}
-              <div className="bg-[#181818] rounded-lg p-4">
-                <h4 className="font-semibold mb-2 text-sm">Features</h4>
-                <ul className="space-y-2 text-xs text-gray-300">
+              <div className="bg-[#181818] rounded-lg p-3 sm:p-4">
+                <h4 className="font-semibold mb-2 text-xs sm:text-sm">Features</h4>
+                <ul className="space-y-1.5 sm:space-y-2 text-xs text-gray-300">
                   <li>✓ Unlimited summaries</li>
                   <li>✓ Save your history</li>
                   <li>✓ Download summaries</li>
@@ -388,12 +441,12 @@ const Dashboard = () => {
 
           {/* Logout Button */}
           {isSidebarOpen && (
-            <div className="mt-4 pt-4 border-t border-gray-700 flex-shrink-0">
+            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-700 flex-shrink-0">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-4 py-2 hover:bg-[#181818] rounded transition-colors text-red-400 hover:text-red-300"
+                className="w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-2 hover:bg-[#181818] rounded transition-colors text-red-400 hover:text-red-300 text-sm sm:text-base"
               >
-                <LogOut size={18} />
+                <LogOut size={16} className="sm:w-[18px] sm:h-[18px]" />
                 <span>Logout</span>
               </button>
             </div>
@@ -402,11 +455,21 @@ const Dashboard = () => {
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="flex-1 h-full flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-screen md:h-full flex flex-col overflow-hidden">
         {/* Top Navigation */}
-        <div className="py-3 px-4 md:py-4 md:px-6 lg:px-10 flex items-center justify-between border-b border-gray-700 flex-shrink-0 bg-[#202124]">
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">Dashboard</h1>
-          <div className="flex items-center gap-3">
+        <div className="py-3 px-4 sm:py-4 sm:px-6 lg:px-10 flex items-center justify-between border-b border-gray-700 flex-shrink-0 bg-[#202124] sticky top-0 z-30">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden p-2 hover:bg-[#181818] rounded-lg transition-colors"
+              aria-label="Open menu"
+            >
+              <Menu size={20} />
+            </button>
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold">Dashboard</h1>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
             {user && (
               <div className="hidden md:block text-right">
                 <p className="text-sm font-medium">{user.name}</p>
@@ -420,19 +483,19 @@ const Dashboard = () => {
         <div className="flex-1 overflow-y-auto relative">
           {/* Centered Input (when no summary) */}
           {!hasStartedGeneration && (
-            <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6 lg:p-8">
               <div className="w-full max-w-3xl">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                <div className="text-center mb-6 sm:mb-8">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
                     Welcome to SummTube
                   </h2>
-                  <p className="text-gray-400 text-lg">
+                  <p className="text-gray-400 text-sm sm:text-base md:text-lg">
                     Paste a YouTube link to get an AI-generated summary
                   </p>
                 </div>
 
                 <div className="relative">
-                  <div className="flex items-center gap-2 bg-[#202124] rounded-full py-2 px-5 shadow-lg border border-gray-700">
+                  <div className="flex items-center gap-2 bg-[#202124] rounded-full sm:rounded-2xl py-2 sm:py-2.5 px-3 sm:px-5 shadow-lg border border-gray-700">
                     <input
                       type="text"
                       value={link}
@@ -443,24 +506,25 @@ const Dashboard = () => {
                         }
                       }}
                       placeholder="Paste YouTube link here..."
-                      className="flex-1 px-3 py-3 bg-transparent text-white outline-none text-base placeholder-gray-500"
+                      className="flex-1 px-2 sm:px-3 py-2 sm:py-3 bg-transparent text-white outline-none text-sm sm:text-base placeholder-gray-500 min-w-0"
                       disabled={isLoading}
                     />
                     {!isLoading ? (
                       <button
                         onClick={handleSubmit}
-                        disabled={isLoading}
-                        className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-3 rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isLoading || !link.trim()}
+                        className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-2 sm:p-3 rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                        aria-label="Generate summary"
                       >
-                        <Send size={20} />
+                        <Send size={18} className="sm:w-5 sm:h-5" />
                       </button>
                     ) : (
                       <button
                         onClick={stopGeneration}
-                        className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg transition-all"
+                        className="bg-red-600 hover:bg-red-700 text-white p-2 sm:p-3 rounded-lg transition-all flex-shrink-0"
                         title="Stop generation"
                       >
-                        <Square size={20} />
+                        <Square size={18} className="sm:w-5 sm:h-5" />
                       </button>
                     )}
                   </div>
@@ -621,10 +685,10 @@ const Dashboard = () => {
 
         {/* Bottom Input (when summary exists) */}
         {hasStartedGeneration && (
-          <div className="p-4 md:p-6 border-t border-gray-700 bg-[#202124] flex-shrink-0">
+          <div className="p-4 sm:p-6 border-t border-gray-700 bg-[#202124] flex-shrink-0 sticky bottom-0 z-20">
             <div className="max-w-4xl mx-auto">
               <div className="relative">
-                <div className="flex items-center gap-2 bg-[#181818] rounded-full py-2 px-5 border border-gray-700">
+                <div className="flex items-center gap-2 bg-[#181818] rounded-full sm:rounded-2xl py-2 sm:py-2.5 px-3 sm:px-5 border border-gray-700">
                   <input
                     type="text"
                     value={link}
@@ -635,28 +699,30 @@ const Dashboard = () => {
                       }
                     }}
                     placeholder="Paste another YouTube link..."
-                    className="flex-1 px-3 py-2 md:py-3 bg-transparent text-white outline-none text-sm md:text-base placeholder-gray-500"
+                    className="flex-1 px-2 sm:px-3 py-2 sm:py-3 bg-transparent text-white outline-none text-xs sm:text-sm md:text-base placeholder-gray-500 min-w-0"
                     disabled={isLoading}
                   />
                   {!isLoading && !isGenerating ? (
                     <button
                       onClick={handleSubmit}
-                      className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-2 md:p-3 rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all"
+                      disabled={!link.trim()}
+                      className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-2 sm:p-3 rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                      aria-label="Generate summary"
                     >
-                      <Send size={20} />
+                      <Send size={18} className="sm:w-5 sm:h-5" />
                     </button>
                   ) : (
                     <button
                       onClick={stopGeneration}
-                      className="bg-red-600 hover:bg-red-700 text-white p-2 md:p-3 rounded-lg transition-all"
+                      className="bg-red-600 hover:bg-red-700 text-white p-2 sm:p-3 rounded-lg transition-all flex-shrink-0"
                       title="Stop generation"
                     >
-                      <Square size={20} />
+                      <Square size={18} className="sm:w-5 sm:h-5" />
                     </button>
                   )}
                 </div>
               </div>
-              <p className="text-xs md:text-sm text-gray-500 mt-2 text-center">
+              <p className="text-xs sm:text-sm text-gray-500 mt-2 text-center px-2">
                 Supported: YouTube video links
               </p>
             </div>
