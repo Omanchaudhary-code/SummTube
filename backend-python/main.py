@@ -70,7 +70,8 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "SummTube AI Service",
-        "api_key_loaded": bool(os.getenv("GOOGLE_API_KEY"))  # Check if key is loaded
+        "api_key_loaded": bool(os.getenv("GROQ_API_KEY")),  # Check if Groq key is loaded
+        "model": os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
     }
 
 @app.head("/api/v1/health")
