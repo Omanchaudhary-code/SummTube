@@ -19,6 +19,13 @@ $router->head('/', function ($request, $response) {
     $response->empty(200);
 });
 
+$router->get('/', function ($request, $response) {
+    $response->json([
+        'success' => true,
+        'service' => 'SummTube PHP Backend'
+    ], 200);
+});
+
 $router->head('/api/health', function ($request, $response) {
     $response->header('X-Service', 'SummTube PHP Backend');
     $response->header('Content-Length', '0');

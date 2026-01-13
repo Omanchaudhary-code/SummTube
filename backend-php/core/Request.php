@@ -32,7 +32,15 @@ class Request
     public function uri(): string
     {
         $uri = $_SERVER['REQUEST_URI'] ?? '/';
-        return strtok($uri, '?');
+        $path = strtok($uri, '?');
+        if ($path === '/index.php' || str_starts_with($path, '/index.php/')) {
+            $suffix = substr($path, strlen('/index.php'));
+            $path = '/' . ltrim($suffix, '/');
+            if ($path === '/') {
+                return '/';
+            }
+        }
+        return $path;
     }
 
     /**
