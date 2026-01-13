@@ -59,7 +59,7 @@ const Dashboard = () => {
     checkAuthAndFetch();
   }, []);
 
-  // Simulate streaming text effect
+  // Simulate streaming text effect (only for newly generated summaries)
   useEffect(() => {
     if (summary?.summary && isGenerating) {
       let index = 0;
@@ -75,6 +75,9 @@ const Dashboard = () => {
       }, 20);
 
       return () => clearInterval(interval);
+    } else if (summary?.summary && !isGenerating) {
+      // For loaded summaries, set displayedText immediately
+      setDisplayedText(summary.summary);
     }
   }, [summary, isGenerating]);
 
@@ -222,7 +225,8 @@ const Dashboard = () => {
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(summary?.summary || displayedText);
+    const textToCopy = displayedText || summary?.summary || '';
+    navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     showNotification("Copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
@@ -230,7 +234,12 @@ const Dashboard = () => {
 
   const handleDownload = () => {
     if (!summary) return;
-    const blob = new Blob([summary.summary], { type: 'text/plain' });
+    const textToDownload = displayedText || summary.summary || '';
+    if (!textToDownload) {
+      showNotification("No summary content to download", "error");
+      return;
+    }
+    const blob = new Blob([textToDownload], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -255,15 +264,53 @@ const Dashboard = () => {
 
   const loadHistoryItem = async (summaryId) => {
     try {
+      setIsLoading(true);
+      setError(null);
       const response = await api.get(`/summary/${summaryId}`);
-      if (response.data.success) {
-        setSummary(response.data);
-        setDisplayedText(response.data.summary);
+      console.log("Load history response:", response.data); // Debug log
+      
+      if (response.data.success && response.data.data) {
+        const summaryData = response.data.data;
+        // Map the data to match the expected format
+        // Backend returns summary_text, but frontend expects summary
+        const formattedSummary = {
+          id: summaryData.id,
+          video_id: summaryData.video_id,
+          video_url: summaryData.video_url,
+          video_title: summaryData.video_title,
+          thumbnail: summaryData.thumbnail,
+          duration: summaryData.duration || 0,
+          summary: summaryData.summary || summaryData.summary_text || '',
+          summary_type: summaryData.summary_type,
+          transcript_length: summaryData.transcript_length || 0,
+          processing_time: summaryData.processing_time || 0,
+          created_at: summaryData.created_at
+        };
+        
+        console.log("Formatted summary:", formattedSummary); // Debug log
+        
+        setSummary(formattedSummary);
+        // Set displayed text immediately (no typing animation for loaded summaries)
+        setDisplayedText(formattedSummary.summary || '');
         setIsGenerating(false);
         setError(null);
+        
+        // Scroll to top to show the loaded summary
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 100);
+      } else {
+        throw new Error(response.data.error || 'Summary data not found');
       }
     } catch (error) {
-      showNotification("Failed to load summary", error);
+      console.error("Error loading summary:", error);
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Failed to load summary";
+      setError(errorMessage);
+      showNotification(errorMessage, "error");
+      setSummary(null);
+      setDisplayedText("");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -643,7 +690,7 @@ const Dashboard = () => {
                       </h4>
                       <div className="bg-[#181818] rounded-lg p-4 sm:p-5 border border-gray-700">
                         <p className="text-sm sm:text-base text-gray-300 leading-relaxed whitespace-pre-wrap break-words">
-                          {displayedText}
+                          {displayedText || summary?.summary || 'No summary content available'}
                           {isGenerating && (
                             <span className="inline-block w-2 h-5 bg-cyan-400 ml-1 animate-pulse" />
                           )}
