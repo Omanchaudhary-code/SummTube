@@ -5,7 +5,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, 
+  withCredentials: true,
 });
 
 // Response interceptor to handle token refresh
@@ -25,10 +25,16 @@ api.interceptors.response.use(
         // Retry the original request (cookies will be updated automatically)
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - redirect to login
+        // Refresh failed - clear session storage and redirect to login
+        sessionStorage.removeItem('user');
         window.location.href = "/";
         return Promise.reject(refreshError);
       }
+    }
+
+    // Clear session storage on any 401 error
+    if (error.response?.status === 401) {
+      sessionStorage.removeItem('user');
     }
 
     return Promise.reject(error);

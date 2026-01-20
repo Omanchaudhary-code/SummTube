@@ -22,7 +22,7 @@ class User
         $sql = "SELECT * FROM {$this->table} WHERE email = :email LIMIT 1";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':email' => $email]);
-        
+
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         return $user ?: null;
     }
@@ -35,7 +35,7 @@ class User
         $sql = "SELECT * FROM {$this->table} WHERE google_id = :google_id LIMIT 1";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':google_id' => $googleId]);
-        
+
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         return $user ?: null;
     }
@@ -48,7 +48,7 @@ class User
         $sql = "SELECT * FROM {$this->table} WHERE id = :id LIMIT 1";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
-        
+
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         return $user ?: null;
     }
@@ -59,9 +59,9 @@ class User
     public function create(array $data): int
     {
         $sql = "INSERT INTO {$this->table} 
-                (email, password, name, google_id, auth_provider, created_at, updated_at) 
+                (email, password, name, google_id, auth_provider, profile_picture, created_at, updated_at) 
                 VALUES 
-                (:email, :password, :name, :google_id, :auth_provider, NOW(), NOW())
+                (:email, :password, :name, :google_id, :auth_provider, :profile_picture, NOW(), NOW())
                 RETURNING id";
 
         $stmt = $this->db->prepare($sql);
@@ -70,7 +70,8 @@ class User
             ':password' => $data['password'] ?? null,
             ':name' => $data['name'],
             ':google_id' => $data['google_id'] ?? null,
-            ':auth_provider' => $data['auth_provider'] ?? 'email'
+            ':auth_provider' => $data['auth_provider'] ?? 'email',
+            ':profile_picture' => $data['profile_picture'] ?? null
         ]);
 
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -106,7 +107,7 @@ class User
         $sql = "DELETE FROM {$this->table} WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
-        
+
         return $stmt->rowCount() > 0;
     }
 
@@ -152,7 +153,7 @@ class User
         $sql = "SELECT COUNT(*) as total FROM {$this->table}";
         $stmt = $this->db->query($sql);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         return (int) ($result['total'] ?? 0);
     }
 

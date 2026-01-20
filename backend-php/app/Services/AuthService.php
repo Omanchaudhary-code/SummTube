@@ -32,7 +32,8 @@ class AuthService
             'email' => $email,
             'password' => $this->userModel->hashPassword($password),
             'name' => $name,
-            'auth_provider' => 'email'
+            'auth_provider' => 'email',
+            'profile_picture' => null
         ]);
 
         // Initialize usage tracking
@@ -43,7 +44,8 @@ class AuthService
             'id' => $userId,
             'email' => $email,
             'name' => $name,
-            'auth_provider' => 'email'
+            'auth_provider' => 'email',
+            'profile_picture' => null
         ];
 
         // Generate token pair (access + refresh)
@@ -82,7 +84,8 @@ class AuthService
             'id' => $user['id'],
             'email' => $user['email'],
             'name' => $user['name'],
-            'auth_provider' => $user['auth_provider']
+            'auth_provider' => $user['auth_provider'],
+            'profile_picture' => $user['profile_picture'] ?? null
         ];
 
         // Generate token pair (access + refresh)
@@ -104,6 +107,7 @@ class AuthService
         $googleId = $googleUserData['google_id'] ?? $googleUserData['id'] ?? null;
         $email = $googleUserData['email'];
         $name = $googleUserData['name'];
+        $profilePicture = $googleUserData['picture'] ?? null;
 
         if (!$googleId) {
             throw new \Exception('Google ID is missing from authentication data');
@@ -117,13 +121,14 @@ class AuthService
             $user = $this->userModel->findByEmail($email);
 
             if ($user) {
-                // Update existing user with Google ID
+                // Update existing user with Google ID and profile picture
                 $this->userModel->update($user['id'], [
                     'google_id' => $googleId,
                     'auth_provider' => 'google',
-                    'name' => $name  // Update name from Google
+                    'name' => $name,
+                    'profile_picture' => $profilePicture
                 ]);
-                
+
                 error_log("Linked Google account to existing email user: {$email}");
             } else {
                 // Create new user
@@ -132,33 +137,43 @@ class AuthService
                     'name' => $name,
                     'google_id' => $googleId,
                     'auth_provider' => 'google',
-                    'password' => null
+                    'password' => null,
+                    'profile_picture' => $profilePicture
                 ]);
 
                 // Initialize usage
                 $this->usageModel->create($userId);
-                
+
                 $user = $this->userModel->findById($userId);
-                
+
                 error_log("Created new user with Google: {$email}");
             }
         } else {
-            // User exists with Google ID - just update name if changed
+            // User exists with Google ID - update name and profile picture if changed
+            $updateData = [];
             if ($user['name'] !== $name) {
-                $this->userModel->update($user['id'], [
-                    'name' => $name
-                ]);
+                $updateData['name'] = $name;
             }
-            
+            if (($user['profile_picture'] ?? null) !== $profilePicture) {
+                $updateData['profile_picture'] = $profilePicture;
+            }
+            if (!empty($updateData)) {
+                $this->userModel->update($user['id'], $updateData);
+            }
+
             error_log("Google login for existing user: {$email}");
         }
+
+        // Refresh user data to get latest profile picture
+        $user = $this->userModel->findById($user['id']);
 
         // Prepare user data
         $userData = [
             'id' => $user['id'],
             'email' => $user['email'],
             'name' => $user['name'],
-            'auth_provider' => $user['auth_provider']
+            'auth_provider' => $user['auth_provider'],
+            'profile_picture' => $user['profile_picture'] ?? null
         ];
 
         // Generate token pair (access + refresh)
@@ -195,7 +210,8 @@ class AuthService
             'id' => $user['id'],
             'email' => $user['email'],
             'name' => $user['name'],
-            'auth_provider' => $user['auth_provider']
+            'auth_provider' => $user['auth_provider'],
+            'profile_picture' => $user['profile_picture'] ?? null
         ];
 
         // Generate new access token
