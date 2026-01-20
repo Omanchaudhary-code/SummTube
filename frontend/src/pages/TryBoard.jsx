@@ -528,25 +528,22 @@ const GenerationSteps = ({ currentStep }) => {
         <div key={step.id} className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
           <div className="flex flex-col items-center">
             <div
-              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-lg sm:text-xl transition-all duration-500 ${
-                currentStep >= step.id
-                  ? "bg-gradient-to-br from-emerald-400 to-blue-500 text-white scale-110 shadow-lg"
-                  : "bg-gray-200 text-gray-400"
-              }`}
+              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-lg sm:text-xl transition-all duration-500 ${currentStep >= step.id
+                ? "bg-gradient-to-br from-emerald-400 to-blue-500 text-white scale-110 shadow-lg"
+                : "bg-gray-200 text-gray-400"
+                }`}
             >
               {currentStep >= step.id ? "✓" : step.icon}
             </div>
-            <span className={`text-xs sm:text-sm mt-1 sm:mt-2 text-center max-w-[60px] sm:max-w-none ${
-              currentStep >= step.id ? "text-gray-800 font-medium" : "text-gray-500"
-            }`}>
+            <span className={`text-xs sm:text-sm mt-1 sm:mt-2 text-center max-w-[60px] sm:max-w-none ${currentStep >= step.id ? "text-gray-800 font-medium" : "text-gray-500"
+              }`}>
               {step.label}
             </span>
           </div>
           {index < steps.length - 1 && (
             <div
-              className={`hidden sm:block w-8 md:w-12 lg:w-16 h-1 transition-all duration-500 ${
-                currentStep > step.id ? "bg-gradient-to-r from-emerald-400 to-blue-500" : "bg-gray-200"
-              }`}
+              className={`hidden sm:block w-8 md:w-12 lg:w-16 h-1 transition-all duration-500 ${currentStep > step.id ? "bg-gradient-to-r from-emerald-400 to-blue-500" : "bg-gray-200"
+                }`}
             />
           )}
         </div>
@@ -630,7 +627,7 @@ const TryBoard = () => {
           setTriesLeft(response.data.guest_status?.triesLeft || 0);
           setLink("");
           setIsTyping(true);
-          
+
           // Scroll to summary when it appears
           setTimeout(() => {
             summaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -677,38 +674,39 @@ const TryBoard = () => {
   return (
     <>
       <div className="min-h-screen w-full bg-[var(--bg-main)] flex flex-col md:flex-row overflow-hidden">
-        {/* LEFT SIDEBAR - Hidden on mobile, overlay on tablet, sidebar on desktop */}
-        <div
-          className={`left-section h-auto md:h-screen bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 ease-in-out ${
-            isSidebarOpen 
-              ? "w-full md:w-80 fixed md:relative z-40 md:z-auto" 
-              : "w-0 md:w-20 hidden md:block"
-          } overflow-hidden shadow-sm md:shadow-none`}
+        {/* Mobile backdrop overlay */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden animate-fadeIn"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* LEFT SIDEBAR - Slides from left on mobile, sidebar on desktop */}
+        <aside
+          className={`fixed md:sticky top-0 left-0 h-full md:h-screen bg-white border-r border-gray-200 flex-shrink-0 z-50 md:z-auto shadow-2xl md:shadow-sm transition-all duration-300 ease-out ${isSidebarOpen
+            ? "translate-x-0 w-80 md:w-80"
+            : "-translate-x-full md:translate-x-0 md:w-20"
+            }`}
         >
-          <div className={`h-full ${isSidebarOpen ? "p-4 sm:p-6" : "p-3"}`}>
+          <div className={`h-full flex flex-col ${isSidebarOpen ? "p-4 sm:p-6" : "p-3"}`}>
             {/* Logo and Toggle */}
-            <div className="flex items-center justify-between mb-6 md:mb-8">
+            <div className="flex items-center justify-between mb-6 md:mb-8 flex-shrink-0">
               {isSidebarOpen ? (
                 <>
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
-                      <img src={logo} alt="Summtube logo" className="w-6 h-6 sm:w-8 sm:h-8" />
+                    <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
+                      <img src={logo} alt="Summtube logo" className="w-8 h-8" />
                     </div>
-                    <span className="font-bold text-base sm:text-lg">SummTube</span>
+                    <span className="font-bold text-lg">SummTube</span>
                   </div>
                   <button
                     onClick={() => setIsSidebarOpen(false)}
-                    className="hover:bg-gray-100 p-1.5 sm:p-2 rounded-lg transition-colors md:hidden"
+                    className="hover:bg-gray-100 p-2 rounded-lg transition-colors"
                     aria-label="Close sidebar"
                   >
                     <X size={20} className="text-gray-600" />
-                  </button>
-                  <button
-                    onClick={() => setIsSidebarOpen(false)}
-                    className="hidden md:block hover:bg-gray-100 p-2 rounded-lg transition-colors"
-                    aria-label="Collapse sidebar"
-                  >
-                    <ListCollapse size={20} className="text-gray-600" />
                   </button>
                 </>
               ) : (
@@ -722,94 +720,86 @@ const TryBoard = () => {
               )}
             </div>
 
-            {/* Guest Trial Info */}
+            {/* Sidebar Content - Scrollable */}
             {isSidebarOpen && (
-              <div className="space-y-3 sm:space-y-4">
-                <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-4 sm:p-5 border border-emerald-100">
+              <div className="flex-1 overflow-y-auto space-y-4">
+                {/* Guest Trial Info */}
+                <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-5 border border-emerald-100">
                   <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 flex-shrink-0" />
-                    <h3 className="font-semibold text-base sm:text-lg text-gray-800">Free Trial</h3>
+                    <Sparkles className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                    <h3 className="font-semibold text-lg text-gray-800">Free Trial</h3>
                   </div>
-                  
+
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs sm:text-sm text-gray-600">Tries remaining</span>
-                      <span className={`font-bold text-xl sm:text-2xl ${triesLeft === 0 ? "text-red-500" : triesLeft === 1 ? "text-orange-500" : "text-emerald-600"}`}>
+                      <span className="text-sm text-gray-600">Tries remaining</span>
+                      <span className={`font-bold text-2xl ${triesLeft === 0 ? "text-red-500" : triesLeft === 1 ? "text-orange-500" : "text-emerald-600"}`}>
                         {triesLeft}
                       </span>
                     </div>
-                    
+
                     {/* Progress Bar */}
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ease-out ${
-                          triesLeft === 0
-                            ? "bg-red-400"
-                            : triesLeft === 1
+                        className={`h-full rounded-full transition-all duration-500 ease-out ${triesLeft === 0
+                          ? "bg-red-400"
+                          : triesLeft === 1
                             ? "bg-orange-400"
                             : "bg-gradient-to-r from-emerald-400 to-blue-500"
-                        }`}
+                          }`}
                         style={{ width: `${trialPercentage}%` }}
                       />
                     </div>
-                    
+
                     <p className="text-xs text-gray-500 mt-2">
                       {triesLeft === 0
                         ? "All trials used"
                         : triesLeft === 1
-                        ? "Last trial remaining"
-                        : `${triesLeft} trials remaining`}
+                          ? "Last trial remaining"
+                          : `${triesLeft} trials remaining`}
                     </p>
                   </div>
 
                   <button
                     onClick={() => setIsLoginOpen(true)}
-                    className="w-full bg-black text-white py-2 sm:py-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-xs sm:text-sm"
+                    className="w-full bg-black text-white py-2.5 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-sm"
                   >
                     Login for Unlimited Access
                   </button>
                 </div>
 
                 {/* Benefits Card */}
-                <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
-                  <h4 className="font-semibold mb-3 text-xs sm:text-sm text-gray-800">Why Login?</h4>
-                  <ul className="space-y-1.5 sm:space-y-2 text-xs text-gray-600">
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <h4 className="font-semibold mb-3 text-sm text-gray-800">Why Login?</h4>
+                  <ul className="space-y-2 text-xs text-gray-600">
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       <span>Unlimited summaries</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       <span>Save your history</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       <span>Download summaries</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500 flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                       <span>Priority support</span>
                     </li>
                   </ul>
                 </div>
               </div>
             )}
-            
-            {/* Mobile backdrop overlay */}
-            {isSidebarOpen && (
-              <div 
-                className="fixed inset-0 bg-black/50 z-30 md:hidden"
-                onClick={() => setIsSidebarOpen(false)}
-                aria-hidden="true"
-              />
-            )}
           </div>
-        </div>
+        </aside>
 
         {/* MAIN CONTENT */}
         <div className="flex-1 min-h-screen md:h-screen flex flex-col overflow-hidden bg-[var(--bg-main)]">
           {/* Top Navigation */}
           <div className="top-section py-3 sm:py-4 px-4 sm:px-6 lg:px-10 flex items-center justify-between border-b border-gray-200 bg-white flex-shrink-0 sticky top-0 z-30">
+
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Mobile menu button */}
               <button
@@ -837,10 +827,10 @@ const TryBoard = () => {
                 Login
               </button>
             </div>
-          </div>
+          </div >
 
           {/* Main Content Area */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 xl:p-10">
+          < div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 xl:p-10" >
             <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
               {/* Welcome Card */}
               <div className="bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 rounded-xl sm:rounded-2xl p-5 sm:p-6 lg:p-8 border border-emerald-100 shadow-sm">
@@ -857,7 +847,7 @@ const TryBoard = () => {
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                   <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
                   <span className="text-gray-600">
@@ -995,10 +985,10 @@ const TryBoard = () => {
                 </div>
               )}
             </div>
-          </div>
+          </div >
 
           {/* Bottom Input Section - Fixed */}
-          <div className="bottom-section p-4 sm:p-6 border-t border-gray-200 bg-white flex-shrink-0 sticky bottom-0 z-20">
+          < div className="bottom-section p-4 sm:p-6 border-t border-gray-200 bg-white flex-shrink-0 sticky bottom-0 z-20" >
             <div className="max-w-4xl mx-auto">
               <div className="relative">
                 <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 rounded-xl sm:rounded-2xl py-2.5 sm:py-3 px-3 sm:px-5 border border-gray-200 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-100 transition-all">
@@ -1019,11 +1009,10 @@ const TryBoard = () => {
                     type="button"
                     onClick={handleSubmit}
                     disabled={isLoading || triesLeft <= 0 || !link.trim()}
-                    className={`p-2.5 sm:p-3 rounded-lg sm:rounded-xl transition-all flex-shrink-0 ${
-                      isLoading || triesLeft <= 0 || !link.trim()
-                        ? "bg-gray-300 cursor-not-allowed"
-                        : "bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl active:scale-95"
-                    }`}
+                    className={`p-2.5 sm:p-3 rounded-lg sm:rounded-xl transition-all flex-shrink-0 ${isLoading || triesLeft <= 0 || !link.trim()
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl active:scale-95"
+                      }`}
                     aria-label="Generate summary"
                   >
                     {isLoading ? (
@@ -1040,29 +1029,33 @@ const TryBoard = () => {
                   : "Supported: YouTube video links with captions"}
               </p>
             </div>
-          </div>
-        </div>
-      </div>
+          </div >
+        </div >
+      </div >
 
       {/* Modals */}
-      {isLoginOpen && (
-        <LoginModal
-          onClose={() => setIsLoginOpen(false)}
-          onSwitchToSignup={() => {
-            setIsLoginOpen(false);
-            setIsSignupOpen(true);
-          }}
-        />
-      )}
-      {isSignupOpen && (
-        <SignupModal
-          onClose={() => setIsSignupOpen(false)}
-          onSwitchToLogin={() => {
-            setIsSignupOpen(false);
-            setIsLoginOpen(true);
-          }}
-        />
-      )}
+      {
+        isLoginOpen && (
+          <LoginModal
+            onClose={() => setIsLoginOpen(false)}
+            onSwitchToSignup={() => {
+              setIsLoginOpen(false);
+              setIsSignupOpen(true);
+            }}
+          />
+        )
+      }
+      {
+        isSignupOpen && (
+          <SignupModal
+            onClose={() => setIsSignupOpen(false)}
+            onSwitchToLogin={() => {
+              setIsSignupOpen(false);
+              setIsLoginOpen(true);
+            }}
+          />
+        )
+      }
     </>
   );
 };
