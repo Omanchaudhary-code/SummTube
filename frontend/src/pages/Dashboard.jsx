@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { ListCollapse, Send, Menu, Download, Copy, Check, LogOut, User, Square, X, Sparkles, Zap, Clock, ExternalLink, Search, Trash2, CheckCircle2 } from "lucide-react";
 import api from "../services/api.js";
 import toast from "react-hot-toast";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [link, setLink] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -32,32 +34,22 @@ const Dashboard = () => {
 
   // Fetch user profile and history on mount
   useEffect(() => {
-    const checkAuthAndFetch = async () => {
+    const fetchData = async () => {
       try {
-        // First check if user is authenticated
+        // Fetch user profile
         const profileResponse = await api.get("/user/profile");
         if (profileResponse.data.success && profileResponse.data.user) {
           setUser(profileResponse.data.user);
-          // Only fetch history if user is authenticated
-          await fetchHistory();
-        } else {
-          // Not authenticated - redirect to homepage
-          toast.error("Please login to access dashboard");
-          setTimeout(() => {
-            window.location.href = "/";
-          }, 1000);
         }
+        // Fetch history
+        await fetchHistory();
       } catch (error) {
-        // Not authenticated - redirect to homepage
-        console.error("Auth check failed:", error);
-        toast.error("Please login to access dashboard");
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 1000);
+        console.error("Error fetching data:", error);
+        // Don't redirect here - ProtectedRoute handles authentication
       }
     };
 
-    checkAuthAndFetch();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -109,13 +101,8 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error("Error fetching history:", error);
-      // If 401, user is not authenticated
-      if (error.response?.status === 401) {
-        toast.error("Please login to view history");
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 1000);
-      } else {
+      // Don't redirect on 401 - ProtectedRoute and api interceptor handle auth
+      if (error.response?.status !== 401) {
         toast.error("Failed to load history");
       }
     }
@@ -261,11 +248,11 @@ const Dashboard = () => {
       await api.post("/auth/logout");
       showNotification("Logged out successfully!");
       setTimeout(() => {
-        window.location.href = "/";
+        navigate("/", { replace: true });
       }, 1000);
     } catch (error) {
       console.error("Logout error:", error);
-      window.location.href = "/";
+      navigate("/", { replace: true });
     }
   };
 
@@ -339,8 +326,8 @@ const Dashboard = () => {
       {/* LEFT SIDEBAR - Slides from left on mobile, sidebar on desktop */}
       <aside
         className={`fixed md:sticky top-0 left-0 h-full md:h-screen bg-[#202124] flex-shrink-0 z-50 md:z-10 shadow-2xl md:shadow-none transition-all duration-300 ease-out ${isSidebarOpen
-            ? "translate-x-0 w-80 md:w-64"
-            : "-translate-x-full md:translate-x-0 md:w-16"
+          ? "translate-x-0 w-80 md:w-64"
+          : "-translate-x-full md:translate-x-0 md:w-16"
           }`}
       >
         <div className={`h-full flex flex-col ${isSidebarOpen ? "p-4 sm:p-5" : "p-2 md:p-3"}`}>

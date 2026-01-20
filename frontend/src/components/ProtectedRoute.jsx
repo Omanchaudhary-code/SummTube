@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import api from "../services/api.js";
 
 const ProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     const checkAuth = async () => {
+      setIsLoading(true);
       try {
         const response = await api.get("/user/profile");
         if (response.data.success && response.data.user) {
@@ -17,6 +19,7 @@ const ProtectedRoute = ({ children }) => {
         }
       } catch (error) {
         // Not authenticated
+        console.error("Auth check failed:", error);
         setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
@@ -24,7 +27,7 @@ const ProtectedRoute = ({ children }) => {
     };
 
     checkAuth();
-  }, []);
+  }, [location.pathname]); // Re-check auth when route changes
 
   if (isLoading) {
     // Show loading state while checking authentication

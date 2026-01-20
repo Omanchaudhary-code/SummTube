@@ -236,7 +236,7 @@ const PrimaryCardSection = ({ cardsData }) => {
         transition={{ duration: 0.5 }}
         className="text-center mb-6 sm:mb-10"
       >
-        <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--text-primary)]">
+        <h2 className="text-3xl sm:text-4xl font-medium tracking-tight text-[var(--text-primary)]">
           Why choose SummTube?
         </h2>
       </motion.div>
@@ -268,7 +268,7 @@ const PrimaryCardSection = ({ cardsData }) => {
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <h3 className="text-2xl sm:text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
+                  <h3 className="text-2xl sm:text-2xl font-medium tracking-tight text-[var(--text-primary)]">
                     {card.title}
                   </h3>
                   <p className="text-base sm:text-[1.05rem] text-[var(--text-secondary)] font-normal leading-relaxed">

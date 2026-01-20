@@ -696,10 +696,9 @@ const TryBoard = () => {
               {isSidebarOpen ? (
                 <>
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
-                      <img src={logo} alt="Summtube logo" className="w-8 h-8" />
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <img src={logo} alt="Summtube logo" className="h-8" />
                     </div>
-                    <span className="font-bold text-lg">SummTube</span>
                   </div>
                   <button
                     onClick={() => setIsSidebarOpen(false)}
@@ -726,14 +725,13 @@ const TryBoard = () => {
                 {/* Guest Trial Info */}
                 <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-5 border border-emerald-100">
                   <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-5 h-5 text-emerald-600 flex-shrink-0" />
                     <h3 className="font-semibold text-lg text-gray-800">Free Trial</h3>
                   </div>
 
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-gray-600">Tries remaining</span>
-                      <span className={`font-bold text-2xl ${triesLeft === 0 ? "text-red-500" : triesLeft === 1 ? "text-orange-500" : "text-emerald-600"}`}>
+                      <span className={`font-bold text-2xl ${triesLeft === 0 ? "text-red-500" : triesLeft === 1 ? "text-orange-500" : "text-gray-600"}`}>
                         {triesLeft}
                       </span>
                     </div>
@@ -742,10 +740,10 @@ const TryBoard = () => {
                     <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ease-out ${triesLeft === 0
-                          ? "bg-red-400"
+                          ? "bg-black-400"
                           : triesLeft === 1
-                            ? "bg-orange-400"
-                            : "bg-gradient-to-r from-emerald-400 to-blue-500"
+                            ? "bg-black-400"
+                            : "bg-gradient-to-r from-black to-gray-500"
                           }`}
                         style={{ width: `${trialPercentage}%` }}
                       />
@@ -809,7 +807,7 @@ const TryBoard = () => {
               >
                 <Menu size={20} className="text-gray-600" />
               </button>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-l from-black-600 to-gray-600 bg-clip-text">
                 SummTube
               </h1>
             </div>
@@ -835,7 +833,7 @@ const TryBoard = () => {
               {/* Welcome Card */}
               <div className="bg-gradient-to-br from-emerald-50 via-blue-50 to-purple-50 rounded-xl sm:rounded-2xl p-5 sm:p-6 lg:p-8 border border-emerald-100 shadow-sm">
                 <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 mb-4">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-black to-gray-500 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
                     <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">

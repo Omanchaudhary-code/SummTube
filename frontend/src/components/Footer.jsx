@@ -49,13 +49,19 @@ const Footer = () => {
             </div>
 
             <div className="flex gap-2 pt-2 justify-center lg:justify-start">
-              <span className="border border-slate-300 p-2 rounded-md inline-flex">
-                <Mail size={16} />
-              </span>
-              <span className="border border-slate-300 p-2 rounded-md inline-flex">
-                <Github size={16} />
-              </span>
-            </div>
+            <span className="border border-slate-300 p-2 rounded-md inline-flex">
+              <Mail size={16} />
+            </span>
+
+            <a
+              href="https://github.com/Omanchaudhary-code/SummTube"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="border border-slate-300 p-2 rounded-md inline-flex hover:cursor-pointer"
+            >
+              <Github size={16} />
+            </a>
+          </div>
           </div>
         </div>
 
