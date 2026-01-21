@@ -220,22 +220,38 @@ class YouTubeService:
                 with tempfile.TemporaryDirectory() as temp_dir:
                     out_tmpl = os.path.join(temp_dir, f"{video_id}_%(ext)s")
                     
+                    # Random user agent to avoid static fingerprinting
+                    user_agents = [
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0',
+                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:123.0) Gecko/20100101 Firefox/123.0',
+                    ]
+                    
                     ydl_opts = {
                         'quiet': True,
                         'no_warnings': True,
                         'skip_download': True, # We only want metadata and subs, not the video
                         'writesubtitles': not transcript,
                         'writeautomaticsub': not transcript,
-                        'subtitleslangs': ['en'],
+                        'subtitleslangs': ['en.*'],
                         'outtmpl': out_tmpl,
                         'subtitlesformat': 'json3',
-                        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'user_agent': random.choice(user_agents),
                         'nocheckcertificate': True,
                         'geo_bypass': True,
+                        # CRITICAL: Use Android/iOS clients to bypass "Sign in to confirm you're not a bot"
+                        # 'android' is often most reliable for metadata, 'ios' for some protected videos
+                        'extractor_args': {
+                            'youtube': {
+                                'player_client': ['android', 'ios', 'web'],
+                                'skip': ['dash', 'hls']
+                            }
+                        },
                         # Gentle rate limiting to reduce 429s
                         'sleep_interval_requests': 1.0,
                         'max_sleep_interval_requests': 3.0,
-                        'ratelimit': 500000,  # bytes per second (0.5 MB/s)
+                        'ratelimit': 500000,
                         'concurrent_fragment_downloads': 1,
                     }
                     
