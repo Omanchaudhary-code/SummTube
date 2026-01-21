@@ -52,6 +52,7 @@ class YouTubeService:
         Caller is responsible for removing the file.
         """
         import base64
+        import re
 
         # Prefer base64 if available
         cookies_b64 = os.getenv("YOUTUBE_COOKIES_B64")
@@ -79,6 +80,63 @@ class YouTubeService:
             logger.info("No YouTube cookies provided via env; proceeding without cookies")
             return None
 
+        def _normalize_netscape(text: str) -> str:
+            """
+            Normalize cookie text into Netscape/Mozilla cookie file format:
+            <domain>\t<flag>\t<path>\t<secure>\t<expires>\t<name>\t<value>
+            - Preserves comment lines starting with '#'
+            - Converts literal '\\t' sequences to tabs
+            - If tabs are missing, attempts to reconstruct using regex groups
+            """
+            lines = []
+            for raw_line in text.replace("\r\n", "\n").split("\n"):
+                line = raw_line.strip()
+                if not line:
+                    continue
+                if line.startswith("#"):
+                    lines.append(raw_line)  # keep original comment formatting
+                    continue
+
+                # Convert escaped tabs to real tabs
+                if "\\t" in line and "\t" not in line:
+                    line = line.replace("\\t", "\t")
+
+                # If already tab-delimited with 7 columns, keep as-is
+                if "\t" in line:
+                    parts = line.split("\t")
+                    if len(parts) == 7:
+                        lines.append("\t".join(parts))
+                        continue
+                    # Fall through to try to repair
+
+                # Attempt to reconstruct when tabs were stripped
+                # Expected pattern: <domain><TRUE|FALSE><path><TRUE|FALSE><expires><name><value>
+                # Accept optional '/' between flags when tabs were removed (e.g., 'TRUE/FALSE')
+                m = re.match(r"^(\.?[A-Za-z0-9\.\-]+)(TRUE|FALSE)(\/?)(TRUE|FALSE)(\d+)([A-Za-z0-9_\-\.]+)(.+)$", line)
+                if m:
+                    domain, flag, maybe_slash, secure, expires, name, value = m.groups()
+                    path = "/" if maybe_slash == "/" else "/"
+                    # Ensure domain starts with '.' as per Netscape format recommendation
+                    if not domain.startswith("."):
+                        domain = f".{domain}"
+                    lines.append("\t".join([domain, flag, path, secure, expires, name, value.strip()]))
+                    continue
+
+                # As a last resort, split on whitespace and re-join if we have 7 tokens
+                ws_parts = re.split(r"\s+", line)
+                if len(ws_parts) == 7:
+                    lines.append("\t".join(ws_parts))
+                    continue
+
+                # If we cannot parse the line, drop it to avoid breaking loaders
+                logger.warning(f"Skipping unparsable cookie line: {raw_line}")
+
+            # Ensure header line exists
+            header_present = any(l.strip().startswith("# Netscape HTTP Cookie File") for l in lines)
+            if not header_present:
+                lines.insert(0, "# Netscape HTTP Cookie File")
+            return "\n".join(lines) + ("\n" if lines else "")
+
         try:
             # Create a named temp file that isn't deleted on close (so other libs can read it)
             fd, path = tempfile.mkstemp(suffix=".txt", text=True)
@@ -86,7 +144,8 @@ class YouTubeService:
                 # Ensure trailing newline (some parsers expect POSIX-style file end)
                 if not cookies_content.endswith("\n"):
                     cookies_content += "\n"
-                f.write(cookies_content)
+                normalized = _normalize_netscape(cookies_content)
+                f.write(normalized)
             return path
         except Exception as e:
             logger.error(f"Failed to create cookies file: {str(e)}")
