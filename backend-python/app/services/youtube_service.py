@@ -12,12 +12,14 @@ logger = logging.getLogger(__name__)
 class YouTubeService:
     async def _with_backoff(self, fn: Callable[[], Any], retries: int = 2, base_delay: float = 1.5):
         """
-        Run a callable with small exponential backoff on 429/Too Many Requests.
-        Intended for sync functions; wrapped inside async to allow asyncio.sleep.
+        Run a callable (sync or async) with small exponential backoff on 429/Too Many Requests.
         """
         for attempt in range(retries + 1):
             try:
-                return fn()
+                result = fn()
+                if asyncio.iscoroutine(result):
+                    result = await result
+                return result
             except Exception as e:
                 msg = str(e)
                 if "429" not in msg and "Too Many Requests" not in msg:
@@ -115,7 +117,7 @@ class YouTubeService:
                 from youtube_transcript_api import YouTubeTranscriptApi
                 logger.info(f"Attempting transcript extraction with YouTubeTranscriptApi for: {video_id}")
                 
-                async def _list_and_pick():
+                def _list_and_pick():
                     # Get list of available transcripts (with cookies) and pick best English
                     transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, cookies=cookie_file)
                     try:
@@ -228,6 +230,9 @@ class YouTubeService:
                 # Check for specific error patterns
                 if "Sign in to confirm" in detailed_error or "403" in detailed_error:
                     raise ValueError("YouTube blocked the request. This video may require sign-in or be restricted. Try using YOUTUBE_COOKIES environment variable or use a different video.")
+                
+                if "Subtitles are disabled" in detailed_error:
+                    raise ValueError("This video has captions/subtitles disabled. Please try a different video with captions enabled.")
                 
                 if "429" in detailed_error or "Too Many Requests" in detailed_error:
                     raise ValueError("YouTube rate limit exceeded. Please try again in 15-20 minutes or use a different video link.")
