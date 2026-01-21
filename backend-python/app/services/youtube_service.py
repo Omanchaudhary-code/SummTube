@@ -3,11 +3,31 @@ import yt_dlp
 import logging
 import os
 import tempfile
-from typing import Dict, Optional
+import asyncio
+import random
+from typing import Dict, Optional, Callable, Any
 
 logger = logging.getLogger(__name__)
 
 class YouTubeService:
+    async def _with_backoff(self, fn: Callable[[], Any], retries: int = 2, base_delay: float = 1.5):
+        """
+        Run a callable with small exponential backoff on 429/Too Many Requests.
+        Intended for sync functions; wrapped inside async to allow asyncio.sleep.
+        """
+        for attempt in range(retries + 1):
+            try:
+                return fn()
+            except Exception as e:
+                msg = str(e)
+                if "429" not in msg and "Too Many Requests" not in msg:
+                    raise
+                if attempt == retries:
+                    raise
+                delay = base_delay * (2 ** attempt) + random.uniform(0, 0.5)
+                logger.warning(f"Rate-limited by YouTube; retrying in {delay:.1f}s (attempt {attempt + 1}/{retries + 1})")
+                await asyncio.sleep(delay)
+
     @staticmethod
     def extract_video_id(url: str) -> Optional[str]:
         """Extract video ID from various YouTube URL formats"""
@@ -95,33 +115,33 @@ class YouTubeService:
                 from youtube_transcript_api import YouTubeTranscriptApi
                 logger.info(f"Attempting transcript extraction with YouTubeTranscriptApi for: {video_id}")
                 
-                try:
-                    # Get list of available transcripts
-                    # Pass cookies if available
+                async def _list_and_pick():
+                    # Get list of available transcripts (with cookies) and pick best English
                     transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, cookies=cookie_file)
-                    
-                    # Try to find best English transcript
                     try:
-                        # 1. Manual English
                         t = transcript_list.find_manually_created_transcript(['en', 'en-US', 'en-GB'])
                         logger.info(f"Found manual English transcript: {t.language_code}")
                     except:
                         try:
-                            # 2. Generated English
                             t = transcript_list.find_generated_transcript(['en', 'en-US', 'en-GB'])
                             logger.info(f"Found generated English transcript: {t.language_code}")
                         except:
-                            # 3. Any English (might be translated)
                             t = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
                             logger.info(f"Found some English transcript: {t.language_code}")
-                    
-                    transcript_data = t.fetch()
+                    return t.fetch()
+
+                try:
+                    transcript_data = await self._with_backoff(_list_and_pick)
                     transcript = ' '.join([entry['text'] for entry in transcript_data])
                     logger.info("Transcript fetched successfully via YouTubeTranscriptApi")
                 except Exception as e:
                     logger.warning(f"YouTubeTranscriptApi (list_transcripts) failed: {str(e)}")
-                    # Fallback to direct get_transcript (also pass cookies)
-                    transcript_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'en-US', 'en-GB'], cookies=cookie_file)
+                    # Fallback to direct get_transcript (also pass cookies) with backoff
+                    transcript_data = await self._with_backoff(
+                        lambda: YouTubeTranscriptApi.get_transcript(
+                            video_id, languages=['en', 'en-US', 'en-GB'], cookies=cookie_file
+                        )
+                    )
                     transcript = ' '.join([entry['text'] for entry in transcript_data])
                     logger.info("Transcript fetched successfully via direct get_transcript")
             except Exception as e:
@@ -151,6 +171,11 @@ class YouTubeService:
                         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                         'nocheckcertificate': True,
                         'geo_bypass': True,
+                        # Gentle rate limiting to reduce 429s
+                        'sleep_interval_requests': 1.0,
+                        'max_sleep_interval_requests': 3.0,
+                        'ratelimit': 500000,  # bytes per second (0.5 MB/s)
+                        'concurrent_fragment_downloads': 1,
                     }
                     
                     # Add cookiefile if available
