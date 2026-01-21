@@ -44,12 +44,14 @@ const SignupModal = ({
         password: form.password
       });
 
-      toast.success("Account created successfully! Please log in.");
+      toast.success("Account created successfully! Please log in.", {
+        position: "top-right",
+      });
       setTimeout(onSwitchToLogin, 800);
     } catch (err) {
       const msg =
         err.response?.data?.message || "Something went wrong.";
-      toast.error(msg);
+      toast.error(msg, { position: "top-right" });
       setError(msg);
     } finally {
       setLoading(false);

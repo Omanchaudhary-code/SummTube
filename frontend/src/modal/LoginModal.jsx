@@ -301,49 +301,64 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
 
         {/* ---------- Google Sign-In ---------- */}
         <div className="w-full">
-          {googleError ? (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm text-center">
-              {googleError}
+          <div className="w-full rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4 shadow-inner">
+            <p className="text-sm font-medium text-gray-800 mb-2 text-left">
+              Continue with Google
+            </p>
+            <p className="text-xs text-gray-500 mb-3 text-left">
+              Use your Google account for a one-click, password-free login.
+            </p>
+
+            {googleError ? (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm text-center">
+                {googleError}
+                <button
+                  onClick={() => {
+                    setGoogleError(null);
+                    isInitializing.current = false;
+                    initGoogle();
+                  }}
+                  className="block w-full mt-2 text-red-700 underline hover:text-red-800"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : googleReady ? (
+              <div
+                ref={googleButtonRef}
+                className="w-full flex justify-center"
+              />
+            ) : (
               <button
-                onClick={() => {
-                  setGoogleError(null);
-                  isInitializing.current = false;
-                  initGoogle();
-                }}
-                className="block w-full mt-2 text-red-700 underline hover:text-red-800"
+                disabled
+                className="w-full flex items-center justify-center gap-3 border border-gray-300 py-2.5 rounded-lg bg-white cursor-not-allowed opacity-70"
               >
-                Retry
+                <svg
+                  className="w-5 h-5 animate-spin text-gray-500"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <div className="flex flex-col items-start text-left">
+                  <span className="text-gray-900 text-sm font-medium">Google</span>
+                  <span className="text-gray-500 text-xs">Loading secure sign-in</span>
+                </div>
               </button>
-            </div>
-          ) : googleReady ? (
-            <div ref={googleButtonRef} className="w-full flex justify-center" />
-          ) : (
-            <button
-              disabled
-              className="w-full flex items-center justify-center gap-3 border border-gray-300 py-2.5 rounded-lg bg-gray-50 cursor-not-allowed opacity-60"
-            >
-              <svg
-                className="w-5 h-5 animate-spin text-gray-500"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              <span className="text-gray-600">Loading Google Sign-In...</span>
-            </button>
-          )}
+            )}
+          </div>
         </div>
 
         {/* ---------- Footer ---------- */}

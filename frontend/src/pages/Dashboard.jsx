@@ -55,7 +55,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user && !welcomedRef.current) {
-      toast.success(`Welcome, ${user.name}!`);
+      toast.success(`Welcome, ${user.name}!`, { position: "top-right" });
       welcomedRef.current = true;
     }
   }, [user]);
@@ -506,13 +506,19 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             {user && (
-              <div className="hidden md:flex items-center gap-2">
-                <Avatar user={user} size="small" />
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
+              <>
+                <div className="hidden md:flex flex-col text-right mr-2">
+                  <span className="text-xs text-gray-500">Welcome back,</span>
+                  <span className="text-sm font-semibold text-gray-900">{user.name}</span>
                 </div>
-              </div>
+                <div className="hidden md:flex items-center gap-2">
+                  <Avatar user={user} size="small" />
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
