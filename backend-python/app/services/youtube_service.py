@@ -135,37 +135,62 @@ class YouTubeService:
             
             # PHASE 3: Try yt-dlp for METADATA and TRANSCRIPT FALLBACK
             try:
-                ydl_opts = {
-                    'quiet': True,
-                    'no_warnings': True,
-                    'skip_download': True,
-                    'writesubtitles': not transcript,
-                    'writeautomaticsub': not transcript,
-                    'subtitleslangs': ['en'],
-                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'nocheckcertificate': True,
-                    'geo_bypass': True,
-                }
-                
-                # Add cookiefile if available
-                if cookie_file:
-                    ydl_opts['cookiefile'] = cookie_file
-                
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
-                    title = info.get('title', title)
-                    duration = info.get('duration', duration)
-                    thumbnail = info.get('thumbnail', thumbnail)
+                # Create a temporary directory for subtitle download
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    out_tmpl = os.path.join(temp_dir, f"{video_id}_%(ext)s")
                     
-                    # If transcript still missing, try to extract from yt-dlp info
-                    if not transcript:
-                        subtitles = info.get('subtitles', {})
-                        automatic_captions = info.get('automatic_captions', {})
+                    ydl_opts = {
+                        'quiet': True,
+                        'no_warnings': True,
+                        'skip_download': True, # We only want metadata and subs, not the video
+                        'writesubtitles': not transcript,
+                        'writeautomaticsub': not transcript,
+                        'subtitleslangs': ['en'],
+                        'outtmpl': out_tmpl,
+                        'subtitlesformat': 'json3',
+                        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'nocheckcertificate': True,
+                        'geo_bypass': True,
+                    }
+                    
+                    # Add cookiefile if available
+                    if cookie_file:
+                        ydl_opts['cookiefile'] = cookie_file
+                    
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        # download=True is required to write subtitle files even if skip_download=True
+                        info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=True)
+                        title = info.get('title', title)
+                        duration = info.get('duration', duration)
+                        thumbnail = info.get('thumbnail', thumbnail)
                         
-                        target_subs = subtitles.get('en') or automatic_captions.get('en')
-                        if target_subs:
-                            logger.info("Attempting transcript extraction from yt-dlp subtitle tracks")
-                            transcript = self._extract_text_from_subtitles(target_subs)
+                        # If transcript still missing, try to read the downloaded subtitle file
+                        if not transcript:
+                            logger.info("Checking for downloaded subtitles in temp dir...")
+                            
+                            # Find best matching subtitle file
+                            # yt-dlp naming: {video_id}.en.json3 or {video_id}.live_chat.json, etc.
+                            sub_files = [f for f in os.listdir(temp_dir) if f.endswith('.json3')]
+                            
+                            # Prioritize manual English, then others
+                            # Filenames usually: video_id.en.json3 (manual) or video_id.en-orig.json3
+                            selected_file = None
+                            
+                            # 1. Manual English
+                            for f in sub_files:
+                                if f.endswith('.en.json3') and 'orig' not in f:
+                                    selected_file = f
+                                    break
+                            
+                            # 2. Any other English
+                            if not selected_file and sub_files:
+                                selected_file = sub_files[0]
+                                
+                            if selected_file:
+                                sub_path = os.path.join(temp_dir, selected_file)
+                                logger.info(f"Parsing subtitle file: {selected_file}")
+                                transcript = self._parse_json3_subtitle(sub_path)
+                                
             except Exception as e:
                 error_details.append(f"yt-dlp metadata fetch failed: {str(e)}")
                 logger.warning(f"yt-dlp failed: {str(e)}")
@@ -222,33 +247,22 @@ class YouTubeService:
                 except Exception as e:
                     logger.warning(f"Failed to remove temp cookie file: {e}")
     
-    def _extract_text_from_subtitles(self, subtitle_tracks):
-        """Extract text from subtitle tracks"""
+    def _parse_json3_subtitle(self, file_path: str) -> Optional[str]:
+        """Parse text from a local json3 subtitle file"""
         try:
-            # Find json3 format
-            for track in subtitle_tracks:
-                if track.get('ext') == 'json3':
-                    url = track.get('url')
-                    if url:
-                        import requests
-                        headers = {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
-                        }
-                        response = requests.get(url, headers=headers, timeout=10)
-                        data = response.json()
-                        
-                        # Extract text from events
-                        texts = []
-                        for event in data.get('events', []):
-                            if 'segs' in event:
-                                for seg in event['segs']:
-                                    text = seg.get('utf8', '').strip()
-                                    if text:
-                                        texts.append(text)
-                        
-                        return ' '.join(texts)
+            import json
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+            texts = []
+            for event in data.get('events', []):
+                if 'segs' in event:
+                    for seg in event['segs']:
+                        text = seg.get('utf8', '').strip()
+                        if text:
+                            texts.append(text)
             
-            return None
+            return ' '.join(texts)
         except Exception as e:
-            logger.error(f"Error extracting subtitle text: {str(e)}")
+            logger.error(f"Error parsing subtitle file: {str(e)}")
             return None
