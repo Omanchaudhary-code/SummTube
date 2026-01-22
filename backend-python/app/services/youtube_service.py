@@ -237,21 +237,19 @@ class YouTubeService:
                         'subtitleslangs': ['en.*'],
                         'outtmpl': out_tmpl,
                         'subtitlesformat': 'json3',
-                        'user_agent': random.choice(user_agents),
+                        # 'user_agent': random.choice(user_agents), # Let yt-dlp handle UA or use default
                         'nocheckcertificate': True,
                         'geo_bypass': True,
-                        # CRITICAL: Use Android/iOS clients to bypass "Sign in to confirm you're not a bot"
-                        # 'android' is often most reliable for metadata, 'ios' for some protected videos
-                        'extractor_args': {
-                            'youtube': {
-                                'player_client': ['android', 'ios', 'web'],
-                                'skip': ['dash', 'hls']
-                            }
-                        },
+                        # Simplified extractor args - trust yt-dlp defaults
+                        # 'extractor_args': {
+                        #     'youtube': {
+                        #         'player_client': ['android', 'ios', 'web'],
+                        #         'skip': ['dash', 'hls']
+                        #     }
+                        # },
                         # Gentle rate limiting to reduce 429s
                         'sleep_interval_requests': 1.0,
                         'max_sleep_interval_requests': 3.0,
-                        'ratelimit': 500000,
                         'concurrent_fragment_downloads': 1,
                     }
                     
