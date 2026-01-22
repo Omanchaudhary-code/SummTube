@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ListCollapse, Send, Menu, Download, Copy, Check, LogOut, User, Square, X, Sparkles, Zap, Clock, ExternalLink, Search, Trash2, CheckCircle2 } from "lucide-react";
+import { ListCollapse, Send, Menu, Download, Copy, Check, LogOut, User, Square, X, Sparkles, Zap, Clock, ExternalLink, Search, Trash2, CheckCircle2, AlertTriangle } from "lucide-react";
 import api from "../services/api.js";
 import toast from "react-hot-toast";
 import Avatar from "../components/Avatar.jsx";
 import logo from "../assets/logo.png";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -22,8 +23,26 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredHistory, setFilteredHistory] = useState([]);
   const [isDeleting, setIsDeleting] = useState(null);
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const abortControllerRef = useRef(null);
   const welcomedRef = useRef(false);
+
+  // Back button interception
+  useEffect(() => {
+    // Push state on mount to create a history entry we can trap
+    window.history.pushState(null, null, window.location.pathname);
+
+    const handlePopState = (event) => {
+      // When back is pressed, prevent navigation and show modal
+      window.history.pushState(null, null, window.location.pathname);
+      setShowExitConfirmation(true);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   // Show notification helper (using toast)
   const showNotification = (message, type = "success") => {
@@ -341,9 +360,9 @@ const Dashboard = () => {
             {isSidebarOpen ? (
               <>
                 <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
                     <img src={logo} alt="Summtube logo" className="h-8" />
-                    </div>
+                  </div>
                   <span className="font-semibold text-lg text-gray-900">SummTube</span>
                 </div>
                 <button
@@ -770,6 +789,53 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+      <AnimatePresence>
+        {showExitConfirmation && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowExitConfirmation(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl relative z-10 border border-gray-100 overflow-hidden"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                  <LogOut className="w-6 h-6 text-red-600 ml-1" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Logout & Exit?</h3>
+                <p className="text-gray-500 mb-6 text-sm leading-relaxed">
+                  Are you sure you want to leave the dashboard? You will be logged out.
+                </p>
+
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={() => setShowExitConfirmation(false)}
+                    className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowExitConfirmation(false);
+                      handleLogout();
+                    }}
+                    className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-colors shadow-lg shadow-red-200"
+                  >
+                    Yes, Logout
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
