@@ -335,7 +335,7 @@ const Dashboard = () => {
   const hasStartedGeneration = summary || isLoading || error;
 
   return (
-    <div className="min-h-screen w-full flex flex-col md:flex-row bg-gray-50 text-gray-900 overflow-hidden">
+    <div className="h-screen w-full flex flex-col md:flex-row bg-gray-50 text-gray-900 overflow-hidden">
       {/* Notification Toast - Using react-hot-toast instead */}
 
       {/* Mobile backdrop overlay */}
@@ -510,7 +510,7 @@ const Dashboard = () => {
       </aside>
 
       {/* MAIN CONTENT */}
-      <div className="flex-1 min-h-screen md:h-full flex flex-col overflow-hidden md:overflow-y-auto">
+      <div className="flex-1 min-h-[100dvh] md:min-h-0 md:h-full flex flex-col overflow-y-auto">
         {/* Top Navigation */}
         <div className="py-3 px-4 sm:py-4 sm:px-6 lg:px-10 flex items-center justify-between border-b border-gray-200 flex-shrink-0 bg-white sticky top-0 z-30">
           <div className="flex items-center gap-2 sm:gap-3">
