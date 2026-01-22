@@ -301,13 +301,7 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
 
         {/* ---------- Google Sign-In ---------- */}
         <div className="w-full">
-          <div className="w-full rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4 shadow-inner">
-            <p className="text-sm font-medium text-gray-800 mb-2 text-left">
-              Continue with Google
-            </p>
-            <p className="text-xs text-gray-500 mb-3 text-left">
-              Use your Google account for a one-click, password-free login.
-            </p>
+         
 
             {googleError ? (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm text-center">
@@ -358,7 +352,6 @@ const LoginModal = ({ onClose, onSwitchToSignup }) => {
                 </div>
               </button>
             )}
-          </div>
         </div>
 
         {/* ---------- Footer ---------- */}

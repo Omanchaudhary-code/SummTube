@@ -4,6 +4,7 @@ import { ListCollapse, Send, Menu, Download, Copy, Check, LogOut, User, Square, 
 import api from "../services/api.js";
 import toast from "react-hot-toast";
 import Avatar from "../components/Avatar.jsx";
+import logo from "../assets/logo.png";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -340,9 +341,9 @@ const Dashboard = () => {
             {isSidebarOpen ? (
               <>
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-gray-800 to-black rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-xl">ST</span>
-                  </div>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <img src={logo} alt="Summtube logo" className="h-8" />
+                    </div>
                   <span className="font-semibold text-lg text-gray-900">SummTube</span>
                 </div>
                 <button
@@ -507,10 +508,6 @@ const Dashboard = () => {
           <div className="flex items-center gap-2 sm:gap-3">
             {user && (
               <>
-                <div className="hidden md:flex flex-col text-right mr-2">
-                  <span className="text-xs text-gray-500">Welcome back,</span>
-                  <span className="text-sm font-semibold text-gray-900">{user.name}</span>
-                </div>
                 <div className="hidden md:flex items-center gap-2">
                   <Avatar user={user} size="small" />
                   <div className="text-right">
